@@ -1,0 +1,20 @@
+{
+  "name": "3-word-journal",
+  "version": "1.0.0",
+  "description": "3 Word Journal - Capture life's lessons in just three words",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.2",
+    "vercel": "^49.1.2",
+    "vite": "^7.2.7"
+  }
+}
