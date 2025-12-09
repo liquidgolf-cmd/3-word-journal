@@ -135,23 +135,22 @@ function App() {
         try {
             const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
             
+            console.log('Starting AI word generation...');
+            console.log('API Key configured:', !!apiKey);
+            console.log('Experience text length:', experienceText.length);
+            
             if (!apiKey) {
-                throw new Error('Anthropic API key is not configured. Please set VITE_ANTHROPIC_API_KEY in your environment variables.');
+                const errorMsg = 'Anthropic API key is not configured. Please set VITE_ANTHROPIC_API_KEY in your environment variables.';
+                console.error(errorMsg);
+                throw new Error(errorMsg);
             }
 
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-api-key": apiKey,
-                    "anthropic-version": "2023-06-01"
-                },
-                body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 1000,
-                    messages: [{
-                        role: "user",
-                        content: `Based on this experience, suggest exactly 3 words that capture its essence. Follow these rules from "The 3 Word Journal":
+            const requestBody = {
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1000,
+                messages: [{
+                    role: "user",
+                    content: `Based on this experience, suggest exactly 3 words that capture its essence. Follow these rules from "The 3 Word Journal":
 - Use specific, concrete words (not generalities)
 - Include a person, place, or thing if possible
 - Make the words uniquely identify this experience
@@ -160,49 +159,82 @@ function App() {
 Experience: "${experienceText}"
 
 Respond with ONLY 3 words separated by commas, nothing else.`
-                    }],
-                })
+                }],
+            };
+
+            console.log('Making API request to Anthropic...');
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01"
+                },
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('Response status:', response.status, response.statusText);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                let errorData;
+                try {
+                    errorData = await response.json();
+                    console.error('API Error Response:', errorData);
+                } catch (e) {
+                    const errorText = await response.text();
+                    console.error('API Error Text:', errorText);
+                    throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || JSON.stringify(errorData)}`);
             }
 
             const data = await response.json();
+            console.log('API Response:', data);
+            
             if (!data.content || !data.content[0] || !data.content[0].text) {
-                throw new Error('Unexpected API response format');
+                console.error('Unexpected response format:', data);
+                throw new Error('Unexpected API response format. Check console for details.');
             }
             
             const text = data.content[0].text.trim();
+            console.log('AI Response text:', text);
+            
             const words = text.split(',').map(w => w.trim()).filter(w => w.length > 0).slice(0, 3);
+            console.log('Parsed words:', words);
             
             if (words.length < 3) {
-                throw new Error('AI did not return 3 words. Try rephrasing your experience.');
+                throw new Error(`AI returned only ${words.length} word(s). Response: "${text}". Try rephrasing your experience.`);
             }
             
+            console.log('Setting words:', words);
             setSuggestedWords(words);
             setWord1(words[0] || '');
             setWord2(words[1] || '');
             setWord3(words[2] || '');
+            console.log('Successfully generated and set words!');
         } catch (error) {
             console.error('Error generating words:', error);
-            let errorMessage = error.message;
+            console.error('Error stack:', error.stack);
+            let errorMessage = error.message || 'Unknown error occurred';
             
             // Provide more helpful error messages
-            if (errorMessage.includes('API key')) {
-                errorMessage = 'AI feature requires an API key. Please configure VITE_ANTHROPIC_API_KEY in your environment variables.';
+            if (errorMessage.includes('API key') || errorMessage.includes('VITE_ANTHROPIC_API_KEY')) {
+                errorMessage = 'AI feature requires an API key. Please configure VITE_ANTHROPIC_API_KEY in your environment variables. See ANTHROPIC_API_SETUP.md for instructions.';
             } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
                 errorMessage = 'Invalid API key. Please check your Anthropic API key configuration.';
             } else if (errorMessage.includes('429')) {
                 errorMessage = 'API rate limit exceeded. Please try again in a moment.';
-            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
                 errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (errorMessage.includes('CORS')) {
+                errorMessage = 'CORS error. The API may not allow requests from this origin. Check browser console for details.';
             }
             
-            setError(`AI word generation failed: ${errorMessage}. Switching to Manual Entry mode...`);
+            const fullErrorMessage = `AI word generation failed: ${errorMessage}`;
+            console.error(fullErrorMessage);
+            setError(fullErrorMessage);
             setInputMode('manual');
-            setTimeout(() => setError(null), 8000);
+            setTimeout(() => setError(null), 10000);
         } finally {
             setIsGenerating(false);
         }
