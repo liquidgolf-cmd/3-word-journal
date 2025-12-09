@@ -204,6 +204,13 @@ body {
     background: var(--cream);
     color: var(--dark-brown);
     transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Ensure date input matches textarea padding on all devices */
+.form-group input[type="date"] {
+    padding: 0.85rem;
+    box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -1279,6 +1286,13 @@ body {
 
     .entries-grid {
         grid-template-columns: 1fr;
+    }
+    
+    /* Fix date input padding on mobile to match textarea */
+    .form-group input[type="date"] {
+        padding: 0.85rem;
+        box-sizing: border-box;
+        width: 100%;
     }
 }
 
