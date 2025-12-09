@@ -787,92 +787,65 @@ body {
     text-decoration: underline;
 }
 
-.tag-filter-search {
-    position: relative;
-    margin-bottom: 0.75rem;
-}
-
-.tag-filter-search input {
+.tag-filter-dropdown {
     width: 100%;
-    padding: 0.6rem 2rem 0.6rem 0.75rem;
+    padding: 0.75rem;
     border: 2px solid rgba(196, 166, 97, 0.3);
-    border-radius: 6px;
+    border-radius: 8px;
     font-family: 'Crimson Pro', serif;
-    font-size: 0.9rem;
+    font-size: 1rem;
     background: var(--cream);
     color: var(--dark-brown);
     box-sizing: border-box;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.tag-filter-search input:focus {
+.tag-filter-dropdown:focus {
     outline: none;
     border-color: var(--accent-gold);
     background: white;
+    box-shadow: 0 0 0 3px rgba(196, 166, 97, 0.1);
 }
 
-.tag-search-clear {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
+.selected-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.selected-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--accent-gold);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.remove-tag-btn {
     background: none;
     border: none;
+    color: white;
     font-size: 1.2rem;
-    color: var(--soft-gray);
     cursor: pointer;
     padding: 0;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.2rem;
+    height: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease;
+    line-height: 1;
 }
 
-.tag-search-clear:hover {
-    background: rgba(196, 166, 97, 0.1);
-    color: var(--warm-brown);
-}
-
-.tag-filter-scrollable {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 200px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 0.5rem;
-    border: 1px solid rgba(196, 166, 97, 0.2);
-    border-radius: 6px;
-    padding: 0.5rem;
-    background: var(--cream);
-}
-
-.tag-filter-scrollable::-webkit-scrollbar {
-    width: 6px;
-}
-
-.tag-filter-scrollable::-webkit-scrollbar-track {
-    background: rgba(196, 166, 97, 0.1);
-    border-radius: 3px;
-}
-
-.tag-filter-scrollable::-webkit-scrollbar-thumb {
-    background: var(--accent-gold);
-    border-radius: 3px;
-}
-
-.tag-filter-scrollable::-webkit-scrollbar-thumb:hover {
-    background: var(--warm-brown);
-}
-
-.tag-filter-empty {
-    padding: 1rem;
-    text-align: center;
-    color: var(--soft-gray);
-    font-style: italic;
-    font-size: 0.9rem;
+.remove-tag-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .tag-filter-button {

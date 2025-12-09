@@ -12,7 +12,6 @@ export default function JournalView({
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
     const [specificYear, setSpecificYear] = useState('');
-    const [tagSearchTerm, setTagSearchTerm] = useState('');
 
     // Get all unique tags from entries
     const allTags = useMemo(() => {
@@ -28,16 +27,6 @@ export default function JournalView({
         });
         return Array.from(tagSet).sort();
     }, [entries]);
-
-    // Filter tags based on search term
-    const filteredTags = useMemo(() => {
-        if (!tagSearchTerm.trim()) {
-            return allTags;
-        }
-        return allTags.filter(tag =>
-            tag.toLowerCase().includes(tagSearchTerm.toLowerCase())
-        );
-    }, [allTags, tagSearchTerm]);
 
     // Filter entries
     const filteredEntries = useMemo(() => {
@@ -106,7 +95,14 @@ export default function JournalView({
         setSelectedTags([]);
         setDateFilter('all');
         setSpecificYear('');
-        setTagSearchTerm('');
+    };
+
+    const handleTagSelect = (e) => {
+        const selectedValue = e.target.value;
+        if (selectedValue && !selectedTags.includes(selectedValue)) {
+            setSelectedTags([...selectedTags, selectedValue]);
+            e.target.value = ''; // Reset dropdown
+        }
     };
 
     const hasActiveFilters = searchTerm || selectedTags.length > 0 || (dateFilter !== 'all' && !(dateFilter === 'specificYear' && !specificYear.trim()));
@@ -164,7 +160,7 @@ export default function JournalView({
                 {allTags.length > 0 && (
                     <div className="tag-filter-section">
                         <div className="tag-filter-header">
-                            <label>Tags:</label>
+                            <label htmlFor="tag-select">Tags:</label>
                             {selectedTags.length > 0 && (
                                 <button
                                     type="button"
@@ -176,44 +172,39 @@ export default function JournalView({
                                 </button>
                             )}
                         </div>
-                        <div className="tag-filter-search">
-                            <input
-                                type="text"
-                                placeholder="Search tags..."
-                                value={tagSearchTerm}
-                                onChange={(e) => setTagSearchTerm(e.target.value)}
-                                aria-label="Search tags"
-                            />
-                            {tagSearchTerm && (
-                                <button
-                                    type="button"
-                                    className="tag-search-clear"
-                                    onClick={() => setTagSearchTerm('')}
-                                    aria-label="Clear tag search"
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </div>
-                        <div className="tag-filter-scrollable" role="group" aria-label="Filter by tags">
-                            {filteredTags.length > 0 ? (
-                                filteredTags.map(tag => (
-                                    <button
-                                        key={tag}
-                                        className={`tag-filter-button ${selectedTags.includes(tag) ? 'active' : ''}`}
-                                        onClick={() => toggleTag(tag)}
-                                        aria-pressed={selectedTags.includes(tag)}
-                                        aria-label={`Filter by ${tag} tag`}
-                                    >
+                        <select
+                            id="tag-select"
+                            onChange={handleTagSelect}
+                            value=""
+                            aria-label="Select tag to filter"
+                            className="tag-filter-dropdown"
+                        >
+                            <option value="">Select a tag...</option>
+                            {allTags
+                                .filter(tag => !selectedTags.includes(tag))
+                                .map(tag => (
+                                    <option key={tag} value={tag}>
                                         {tag}
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="tag-filter-empty">
-                                    No tags found matching "{tagSearchTerm}"
-                                </div>
-                            )}
-                        </div>
+                                    </option>
+                                ))}
+                        </select>
+                        {selectedTags.length > 0 && (
+                            <div className="selected-tags-list">
+                                {selectedTags.map(tag => (
+                                    <span key={tag} className="selected-tag-badge">
+                                        {tag}
+                                        <button
+                                            type="button"
+                                            className="remove-tag-btn"
+                                            onClick={() => toggleTag(tag)}
+                                            aria-label={`Remove ${tag} filter`}
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
