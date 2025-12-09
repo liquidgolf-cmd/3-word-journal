@@ -10,8 +10,12 @@ const waitForGapi = () => {
             return;
         }
 
+        // Longer timeout on mobile devices
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const maxAttempts = isMobile ? 200 : 100; // 20 seconds on mobile, 10 seconds on desktop
+        const interval = 100;
+        
         let attempts = 0;
-        const maxAttempts = 100; // 10 seconds total
         const checkGapi = setInterval(() => {
             attempts++;
             if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
@@ -19,9 +23,10 @@ const waitForGapi = () => {
                 resolve();
             } else if (attempts >= maxAttempts) {
                 clearInterval(checkGapi);
-                reject(new Error('Google API client library failed to load after 10 seconds. Please refresh the page.'));
+                const timeoutSeconds = (maxAttempts * interval) / 1000;
+                reject(new Error(`Google API client library failed to load after ${timeoutSeconds} seconds. Please refresh the page and check your internet connection.`));
             }
-        }, 100);
+        }, interval);
     });
 };
 
@@ -31,13 +36,16 @@ export const initGapi = async (clientId) => {
     
     // Load the client library if not already loaded
     if (!window.gapi.client) {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const timeout = isMobile ? 20000 : 10000; // Longer timeout on mobile
+        
         await new Promise((resolve, reject) => {
             window.gapi.load('client', {
                 callback: resolve,
                 onerror: reject,
-                timeout: 10000,
+                timeout: timeout,
                 ontimeout: () => {
-                    reject(new Error('Google API client library load timed out'));
+                    reject(new Error(`Google API client library load timed out after ${timeout / 1000} seconds. Please check your internet connection and try again.`));
                 }
             });
         });

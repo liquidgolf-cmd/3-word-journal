@@ -63,16 +63,35 @@ function App() {
             // Auto-pull from Sheets if authorized and spreadsheet exists
             const autoPullFromSheets = async () => {
                 try {
-                    if (typeof window !== 'undefined' && window.gapi && window.gapi.client) {
+                    // Wait longer on mobile for APIs to load
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    const waitTime = isMobile ? 2000 : 1000;
+                    
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    
+                    if (typeof window === 'undefined' || !window.gapi) {
+                        console.log('gapi not available yet, skipping auto-pull');
+                        return;
+                    }
+                    
+                    // Initialize gapi if needed
+                    try {
                         await initGapi(GOOGLE_CLIENT_ID);
-                        const authorized = isAuthorized();
-                        setSheetsAuthorized(authorized);
-                        
-                        if (authorized) {
-                            const spreadsheetId = getStoredSpreadsheetId();
-                            if (spreadsheetId) {
-                                setIsPulling(true);
+                    } catch (initError) {
+                        console.log('Failed to initialize gapi for auto-pull:', initError.message);
+                        return; // Silent fail for auto-pull
+                    }
+                    
+                    const authorized = isAuthorized();
+                    setSheetsAuthorized(authorized);
+                    
+                    if (authorized) {
+                        const spreadsheetId = getStoredSpreadsheetId();
+                        if (spreadsheetId) {
+                            setIsPulling(true);
+                            try {
                                 const sheetsEntries = await syncFromSheets(spreadsheetId);
+                                console.log(`Auto-pulled ${sheetsEntries.length} entries from Sheets`);
                                 
                                 if (sheetsEntries.length > 0) {
                                     // Merge: Sheets data takes precedence (newer)
@@ -109,21 +128,23 @@ function App() {
                                     setSyncStatus(newSyncStatus);
                                     saveSyncStatus(newSyncStatus);
                                 }
+                            } catch (pullError) {
+                                console.log('Auto-pull failed:', pullError.message);
+                                // Silent fail - don't show error to user
+                            } finally {
+                                setIsPulling(false);
                             }
                         }
                     }
                 } catch (error) {
                     console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
                     // Don't show error to user - auto-pull is silent
-                } finally {
                     setIsPulling(false);
                 }
             };
             
-            // Wait a bit for Google APIs to load, then try auto-pull
-            setTimeout(() => {
-                autoPullFromSheets();
-            }, 1000);
+            // Start auto-pull
+            autoPullFromSheets();
         }
 
         const initGoogle = () => {
@@ -200,16 +221,35 @@ function App() {
             // Auto-pull from Sheets after login
             const autoPullFromSheets = async () => {
                 try {
-                    if (typeof window !== 'undefined' && window.gapi && window.gapi.client) {
+                    // Wait longer on mobile for APIs to load
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                    const waitTime = isMobile ? 2000 : 1000;
+                    
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    
+                    if (typeof window === 'undefined' || !window.gapi) {
+                        console.log('gapi not available yet, skipping auto-pull');
+                        return;
+                    }
+                    
+                    // Initialize gapi if needed
+                    try {
                         await initGapi(GOOGLE_CLIENT_ID);
-                        const authorized = isAuthorized();
-                        setSheetsAuthorized(authorized);
-                        
-                        if (authorized) {
-                            const spreadsheetId = getStoredSpreadsheetId();
-                            if (spreadsheetId) {
-                                setIsPulling(true);
+                    } catch (initError) {
+                        console.log('Failed to initialize gapi for auto-pull:', initError.message);
+                        return; // Silent fail for auto-pull
+                    }
+                    
+                    const authorized = isAuthorized();
+                    setSheetsAuthorized(authorized);
+                    
+                    if (authorized) {
+                        const spreadsheetId = getStoredSpreadsheetId();
+                        if (spreadsheetId) {
+                            setIsPulling(true);
+                            try {
                                 const sheetsEntries = await syncFromSheets(spreadsheetId);
+                                console.log(`Auto-pulled ${sheetsEntries.length} entries from Sheets`);
                                 
                                 if (sheetsEntries.length > 0) {
                                     // Merge: Sheets data takes precedence (newer)
@@ -243,20 +283,22 @@ function App() {
                                     setSyncStatus(newSyncStatus);
                                     saveSyncStatus(newSyncStatus);
                                 }
+                            } catch (pullError) {
+                                console.log('Auto-pull failed:', pullError.message);
+                                // Silent fail - don't show error to user
+                            } finally {
+                                setIsPulling(false);
                             }
                         }
                     }
                 } catch (error) {
                     console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
-                } finally {
                     setIsPulling(false);
                 }
             };
             
-            // Wait a bit for Google APIs to load, then try auto-pull
-            setTimeout(() => {
-                autoPullFromSheets();
-            }, 1000);
+            // Start auto-pull
+            autoPullFromSheets();
         } catch (e) {
             console.error('Error processing credential:', e);
             setError('Error signing in. Please try again.');
@@ -490,11 +532,23 @@ function App() {
         setSuccessMessage(null);
 
         try {
-            if (!window.gapi || !window.gapi.client || !window.gapi.client.sheets) {
-                console.log('Initializing Google Sheets API...');
-                await initGapi(GOOGLE_CLIENT_ID);
+            // Ensure Google APIs are loaded
+            if (typeof window === 'undefined' || !window.gapi) {
+                throw new Error('Google APIs not loaded. Please refresh the page and try again.');
             }
 
+            // Initialize gapi client if needed
+            if (!window.gapi.client || !window.gapi.client.sheets) {
+                console.log('Initializing Google Sheets API...');
+                try {
+                    await initGapi(GOOGLE_CLIENT_ID);
+                } catch (initError) {
+                    console.error('Failed to initialize gapi:', initError);
+                    throw new Error('Failed to initialize Google Sheets API. Please refresh the page.');
+                }
+            }
+
+            // Check authorization
             if (!isAuthorized()) {
                 console.log('Requesting Google Sheets authorization...');
                 try {
@@ -502,23 +556,30 @@ function App() {
                     setSheetsAuthorized(true);
                     console.log('Authorization granted');
                 } catch (authError) {
+                    console.error('Authorization error:', authError);
                     // Re-throw with more context for mobile
-                    if (authError.message && authError.message.includes('popup')) {
-                        throw new Error('Authorization popup was blocked or closed. On mobile, please ensure popups are allowed and try again.');
+                    let errorMsg = authError.message || 'Failed to authorize';
+                    if (errorMsg.includes('popup') || errorMsg.includes('blocked')) {
+                        errorMsg = 'Authorization popup was blocked or closed. On mobile, please:\n1. Allow popups for this site in your browser settings\n2. Try again and complete the authorization';
+                    } else if (errorMsg.includes('timeout')) {
+                        errorMsg = 'Authorization timed out. Please try again and ensure you complete the authorization prompt.';
                     }
-                    throw authError;
+                    throw new Error(errorMsg);
                 }
             } else {
                 console.log('Already authorized for Google Sheets');
             }
 
             let spreadsheetId = getStoredSpreadsheetId();
+            let entriesToSync = [...entries]; // Start with current entries
             
             // First, pull from Sheets to get latest data
             if (spreadsheetId) {
                 try {
                     setIsPulling(true);
+                    console.log('Pulling data from Sheets...');
                     const sheetsEntries = await syncFromSheets(spreadsheetId);
+                    console.log(`Pulled ${sheetsEntries.length} entries from Sheets`);
                     
                     if (sheetsEntries.length > 0) {
                         // Merge Sheets data with local data
@@ -544,17 +605,27 @@ function App() {
                         
                         setEntries(mergedEntries);
                         saveUserEntries(user.sub, mergedEntries);
+                        entriesToSync = mergedEntries; // Use merged entries for push
                     }
                 } catch (pullError) {
                     console.error('Error pulling from Sheets:', pullError);
-                    // Continue with push even if pull fails
+                    // On mobile, if pull fails, still try to push (user might be offline or have connection issues)
+                    // But show a warning
+                    if (pullError.message && !pullError.message.includes('Not authorized')) {
+                        setError(`Warning: Could not pull latest data. Syncing local data only. ${pullError.message}`);
+                        setTimeout(() => setError(null), 5000);
+                    } else {
+                        // If it's an auth error, re-throw it
+                        throw pullError;
+                    }
                 } finally {
                     setIsPulling(false);
                 }
             }
 
             // Then, push local data to Sheets
-            const result = await syncToSheets(entries, spreadsheetId);
+            console.log(`Pushing ${entriesToSync.length} entries to Sheets...`);
+            const result = await syncToSheets(entriesToSync, spreadsheetId);
 
             if (result.success) {
                 // Update sync status
@@ -579,11 +650,13 @@ function App() {
             if (errorMessage.includes('access_denied') || errorMessage.includes('permission')) {
                 errorMessage = 'Permission denied. Please grant access to Google Sheets when prompted.';
             } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-                errorMessage = 'Network error. Please check your internet connection.';
+                errorMessage = 'Network error. Please check your internet connection and try again.';
             } else if (errorMessage.includes('popup') || errorMessage.includes('blocked')) {
                 errorMessage = 'Popup blocked. On mobile, please allow popups for this site in your browser settings, then try again.';
             } else if (errorMessage.includes('timeout')) {
                 errorMessage = 'Request timed out. Please check your connection and try again.';
+            } else if (errorMessage.includes('not loaded') || errorMessage.includes('initialize')) {
+                errorMessage = 'Google APIs not ready. Please refresh the page and try again.';
             }
             
             setError(`Sync failed: ${errorMessage}`);
