@@ -33,7 +33,12 @@
      - Check the box and click **Update**
      - Click **Save and Continue**
      - (If not using Sheets sync, you can skip scopes)
-   - Add test users if needed (click **Save and Continue**)
+   - **Test Users** (IMPORTANT for Testing mode):
+     - Click **+ ADD USERS**
+     - Add your email address (the one you use to sign in)
+     - Add any other emails that need access
+     - Click **Add**
+     - Click **Save and Continue**
    - Click **Back to Dashboard**
 
 4. Now create the OAuth Client ID:
