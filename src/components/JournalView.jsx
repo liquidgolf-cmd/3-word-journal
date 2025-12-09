@@ -12,6 +12,7 @@ export default function JournalView({
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
     const [specificYear, setSpecificYear] = useState('');
+    const [tagSearchTerm, setTagSearchTerm] = useState('');
 
     // Get all unique tags from entries
     const allTags = useMemo(() => {
@@ -27,6 +28,16 @@ export default function JournalView({
         });
         return Array.from(tagSet).sort();
     }, [entries]);
+
+    // Filter tags based on search term
+    const filteredTags = useMemo(() => {
+        if (!tagSearchTerm.trim()) {
+            return allTags;
+        }
+        return allTags.filter(tag =>
+            tag.toLowerCase().includes(tagSearchTerm.toLowerCase())
+        );
+    }, [allTags, tagSearchTerm]);
 
     // Filter entries
     const filteredEntries = useMemo(() => {
@@ -95,6 +106,7 @@ export default function JournalView({
         setSelectedTags([]);
         setDateFilter('all');
         setSpecificYear('');
+        setTagSearchTerm('');
     };
 
     const hasActiveFilters = searchTerm || selectedTags.length > 0 || (dateFilter !== 'all' && !(dateFilter === 'specificYear' && !specificYear.trim()));
@@ -164,18 +176,43 @@ export default function JournalView({
                                 </button>
                             )}
                         </div>
-                        <div className="tag-filter" role="group" aria-label="Filter by tags">
-                            {allTags.map(tag => (
+                        <div className="tag-filter-search">
+                            <input
+                                type="text"
+                                placeholder="Search tags..."
+                                value={tagSearchTerm}
+                                onChange={(e) => setTagSearchTerm(e.target.value)}
+                                aria-label="Search tags"
+                            />
+                            {tagSearchTerm && (
                                 <button
-                                    key={tag}
-                                    className={`tag-filter-button ${selectedTags.includes(tag) ? 'active' : ''}`}
-                                    onClick={() => toggleTag(tag)}
-                                    aria-pressed={selectedTags.includes(tag)}
-                                    aria-label={`Filter by ${tag} tag`}
+                                    type="button"
+                                    className="tag-search-clear"
+                                    onClick={() => setTagSearchTerm('')}
+                                    aria-label="Clear tag search"
                                 >
-                                    {tag}
+                                    ×
                                 </button>
-                            ))}
+                            )}
+                        </div>
+                        <div className="tag-filter-scrollable" role="group" aria-label="Filter by tags">
+                            {filteredTags.length > 0 ? (
+                                filteredTags.map(tag => (
+                                    <button
+                                        key={tag}
+                                        className={`tag-filter-button ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                        onClick={() => toggleTag(tag)}
+                                        aria-pressed={selectedTags.includes(tag)}
+                                        aria-label={`Filter by ${tag} tag`}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="tag-filter-empty">
+                                    No tags found matching "{tagSearchTerm}"
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

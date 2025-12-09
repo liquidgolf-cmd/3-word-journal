@@ -787,10 +787,92 @@ body {
     text-decoration: underline;
 }
 
-.tag-filter {
+.tag-filter-search {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.tag-filter-search input {
+    width: 100%;
+    padding: 0.6rem 2rem 0.6rem 0.75rem;
+    border: 2px solid rgba(196, 166, 97, 0.3);
+    border-radius: 6px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    background: var(--cream);
+    color: var(--dark-brown);
+    box-sizing: border-box;
+}
+
+.tag-filter-search input:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    background: white;
+}
+
+.tag-search-clear {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--soft-gray);
+    cursor: pointer;
+    padding: 0;
+    width: 1.5rem;
+    height: 1.5rem;
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.tag-search-clear:hover {
+    background: rgba(196, 166, 97, 0.1);
+    color: var(--warm-brown);
+}
+
+.tag-filter-scrollable {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+    border: 1px solid rgba(196, 166, 97, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: var(--cream);
+}
+
+.tag-filter-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tag-filter-scrollable::-webkit-scrollbar-track {
+    background: rgba(196, 166, 97, 0.1);
+    border-radius: 3px;
+}
+
+.tag-filter-scrollable::-webkit-scrollbar-thumb {
+    background: var(--accent-gold);
+    border-radius: 3px;
+}
+
+.tag-filter-scrollable::-webkit-scrollbar-thumb:hover {
+    background: var(--warm-brown);
+}
+
+.tag-filter-empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--soft-gray);
+    font-style: italic;
+    font-size: 0.9rem;
 }
 
 .tag-filter-button {
@@ -804,6 +886,9 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-align: left;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .tag-filter-button:hover,
