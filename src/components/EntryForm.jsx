@@ -35,14 +35,14 @@ export default function EntryForm({
                     </div>
                 ) : (
                     <div className="form-group">
-                        <label htmlFor="experience-summary">Describe Your Experience (Optional)</label>
+                        <label htmlFor="experience-summary">Describe Your Experience</label>
                         <textarea
                             id="experience-summary"
                             placeholder="Quick summary of what happened..."
                             value={experienceText}
                             onChange={(e) => setExperienceText(e.target.value)}
                             rows="4"
-                            aria-label="Optional experience summary"
+                            aria-label="Experience summary"
                         />
                         <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
                             You can add the full detailed story later
