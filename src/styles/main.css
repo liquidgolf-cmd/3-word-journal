@@ -519,6 +519,7 @@ body {
     gap: 0.5rem;
     margin-bottom: 2rem;
     border-bottom: 2px solid rgba(196, 166, 97, 0.2);
+    justify-content: center;
 }
 
 .tab-button {
