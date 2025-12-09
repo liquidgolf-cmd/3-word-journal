@@ -7,6 +7,7 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
+  base: '/',
   server: {
     port: 3000,
     open: true,

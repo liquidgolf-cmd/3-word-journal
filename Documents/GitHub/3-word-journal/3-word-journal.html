@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3 Word Journal</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cream: #FBF7F0;
+            --dark-brown: #2C1810;
+            --warm-brown: #6B4423;
+            --accent-gold: #C4A661;
+            --soft-gray: #9B8E7E;
+            --highlight: #E8D5B7;
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: linear-gradient(135deg, var(--cream) 0%, #F5EFE6 100%);
+            color: var(--dark-brown);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 3rem 2rem;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+        }
+
+        .header h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--dark-brown);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: var(--warm-brown);
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Quick Entry Card */
+        .quick-entry-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 
+                0 4px 6px rgba(44, 24, 16, 0.05),
+                0 10px 20px rgba(44, 24, 16, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(196, 166, 97, 0.2);
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        .quick-entry-card h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark-brown);
+            border-bottom: 2px solid var(--accent-gold);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--warm-brown);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.85rem;
+            border: 2px solid rgba(196, 166, 97, 0.3);
+            border-radius: 8px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1rem;
+            background: var(--cream);
+            color: var(--dark-brown);
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(196, 166, 97, 0.1);
+        }
+
+        .topic-input-wrapper {
+            position: relative;
+        }
+
+        .custom-topic-toggle {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--warm-brown);
+            cursor: pointer;
+            text-decoration: underline;
+            display: inline-block;
+            transition: color 0.2s ease;
+        }
+
+        .custom-topic-toggle:hover {
+            color: var(--accent-gold);
+        }
+
+        .three-words-input {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .three-words-input input {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .input-mode-toggle {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        .toggle-option {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid rgba(196, 166, 97, 0.3);
+            border-radius: 8px;
+            background: var(--cream);
+            cursor: pointer;
+            text-align: center;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .toggle-option:hover {
+            border-color: var(--accent-gold);
+        }
+
+        .toggle-option.active {
+            background: var(--accent-gold);
+            color: white;
+            border-color: var(--accent-gold);
+        }
+
+        .ai-suggestions-container {
+            background: linear-gradient(135deg, rgba(196, 166, 97, 0.1), rgba(196, 166, 97, 0.05));
+            border: 2px dashed var(--accent-gold);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .ai-suggestions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .ai-suggestions-header h3 {
+            font-size: 1rem;
+            color: var(--warm-brown);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+        }
+
+        .btn-generate {
+            padding: 0.5rem 1rem;
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(196, 166, 97, 0.3);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .suggested-words {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .suggested-word {
+            padding: 0.6rem 1.2rem;
+            background: white;
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--warm-brown);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .suggested-word:hover {
+            background: var(--accent-gold);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .suggested-word.selected {
+            background: var(--accent-gold);
+            color: white;
+        }
+
+        .suggestion-info {
+            font-size: 0.85rem;
+            color: var(--soft-gray);
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn {
+            font-family: 'Montserrat', sans-serif;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--warm-brown), var(--dark-brown));
+            color: white;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(44, 24, 16, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(44, 24, 16, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Entries Section */
+        .entries-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 
+                0 4px 6px rgba(44, 24, 16, 0.05),
+                0 10px 20px rgba(44, 24, 16, 0.08);
+            border: 1px solid rgba(196, 166, 97, 0.2);
+            min-height: 600px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .section-header h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.8rem;
+            color: var(--dark-brown);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--cream);
+            padding: 0.25rem;
+            border-radius: 8px;
+        }
+
+        .view-toggle button {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--warm-brown);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle button.active {
+            background: white;
+            color: var(--dark-brown);
+            box-shadow: 0 2px 4px rgba(44, 24, 16, 0.1);
+        }
+
+        /* Search Bar */
+        .search-bar {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.5rem;
+            border: 2px solid rgba(196, 166, 97, 0.3);
+            border-radius: 8px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1rem;
+            background: var(--cream);
+        }
+
+        .search-bar::before {
+            content: '🔍';
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        /* Topic Filter */
+        .topic-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .topic-tag {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 2px solid var(--accent-gold);
+            background: transparent;
+            color: var(--warm-brown);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .topic-tag:hover,
+        .topic-tag.active {
+            background: var(--accent-gold);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Entry Cards */
+        .entries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .entry-card {
+            background: linear-gradient(135deg, var(--cream), white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            border: 1px solid rgba(196, 166, 97, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .entry-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-gold);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .entry-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(44, 24, 16, 0.12);
+        }
+
+        .entry-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .entry-date {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            color: var(--soft-gray);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .entry-words {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .word-badge {
+            padding: 0.4rem 0.9rem;
+            background: var(--accent-gold);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .entry-topic {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(196, 166, 97, 0.15);
+            border-radius: 5px;
+            font-size: 0.85rem;
+            color: var(--warm-brown);
+            font-weight: 500;
+        }
+
+        .entry-expanded {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(196, 166, 97, 0.2);
+            color: var(--warm-brown);
+            line-height: 1.6;
+        }
+
+        /* List View */
+        .entries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .entry-list-item {
+            background: linear-gradient(to right, var(--cream), white);
+            padding: 1.25rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-gold);
+            display: grid;
+            grid-template-columns: 120px 1fr 150px;
+            gap: 1.5rem;
+            align-items: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .entry-list-item:hover {
+            box-shadow: 0 4px 12px rgba(44, 24, 16, 0.1);
+            transform: translateX(4px);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--soft-gray);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--warm-brown);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(44, 24, 16, 0.06);
+            border: 1px solid rgba(196, 166, 97, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-family: 'Libre Baskerville', serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--soft-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(44, 24, 16, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--warm-brown);
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .edit-mode-container {
+            background: var(--cream);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .edit-words-input {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .edit-words-input input {
+            padding: 0.75rem;
+            border: 2px solid rgba(196, 166, 97, 0.3);
+            border-radius: 8px;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 600;
+            background: white;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-secondary {
+            background: var(--soft-gray);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--warm-brown);
+            transform: translateY(-1px);
+        }
+
+        .btn-edit {
+            background: var(--accent-gold);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-edit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(196, 166, 97, 0.3);
+        }
+
+        .ai-notice {
+            background: linear-gradient(135deg, rgba(196, 166, 97, 0.15), rgba(196, 166, 97, 0.05));
+            border-left: 4px solid var(--accent-gold);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--warm-brown);
+            line-height: 1.6;
+        }
+
+        .ai-notice strong {
+            color: var(--dark-brown);
+        }
+
+        .ai-notice-close {
+            float: right;
+            cursor: pointer;
+            color: var(--soft-gray);
+            font-weight: bold;
+            margin-left: 1rem;
+        }
+
+        .ai-notice-close:hover {
+            color: var(--warm-brown);
+        }
+
+        .modal-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-button {
+            padding: 1rem;
+            background: white;
+            border: 2px solid var(--accent-gold);
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--warm-brown);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .action-button:hover {
+            background: var(--accent-gold);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(196, 166, 97, 0.3);
+        }
+
+        .action-button.danger {
+            border-color: #c44536;
+            color: #c44536;
+        }
+
+        .action-button.danger:hover {
+            background: #c44536;
+            color: white;
+        }
+
+        .inline-edit-container {
+            background: rgba(196, 166, 97, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 2px solid var(--accent-gold);
+        }
+
+        .inline-edit-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--warm-brown);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-entry-card {
+                position: relative;
+                top: 0;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .entry-list-item {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .three-words-input {
+                grid-template-columns: 1fr;
+            }
+
+            .entries-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .entry-card,
+        .entry-list-item {
+            animation: slideInUp 0.4s ease backwards;
+        }
+
+        .entry-card:nth-child(1) { animation-delay: 0.05s; }
+        .entry-card:nth-child(2) { animation-delay: 0.1s; }
+        .entry-card:nth-child(3) { animation-delay: 0.15s; }
+        .entry-card:nth-child(4) { animation-delay: 0.2s; }
+        .entry-card:nth-child(5) { animation-delay: 0.25s; }
+        .entry-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Predefined topics from the book
+        const TOPICS = [
+            'Achievement', 'Addiction', 'Adversity', 'Affection', 'America', 'Anger',
+            'Animals', 'Attitude', 'Balance', 'Cars', 'Challenge', 'Children',
+            'Christmas', 'Comfort', 'Commitment', 'Communication', 'Compassion',
+            'Consequences', 'Courage', 'Dating', 'Death', 'Decisions', 'Determination',
+            'Discipline', 'Divorce', 'Drama', 'Education', 'Embarrassing', 'Empathy',
+            'Encouragement', 'Endurance', 'Enthusiasm', 'Example', 'Family', 'Family Time',
+            'Fanaticism', 'Fashion', 'Father', 'Fear', 'Finance', 'Forgiveness',
+            'Friends', 'Friendship', 'Fun', 'Goals', 'Goodness', 'Gossip', 'Government',
+            'Gratitude', 'Halloween', 'Happiness', 'Home', 'Honesty', 'Humor', 'Idols',
+            'Influence', 'Journal', 'Judging Others', 'Kindness', 'Kissing', 'Leadership',
+            'Legacy', 'Lessons of Life', 'Life Mission', 'Listening', 'Love', 'Manners',
+            'Marriage', 'Mass Media', 'Mocking', 'Modesty', 'Mothers', 'Movies',
+            'Murmuring', 'Music', 'Nature', 'Obedience', 'Optimism', 'Parents',
+            'Parenting', 'Peer Pressure', 'Perfection', 'Physical Fit', 'Pornography',
+            'Praise', 'Prayer', 'Prejudice', 'Preparation', 'Pride', 'Priority',
+            'Procrastinate', 'Profanity', 'Punctual', 'Rationalization', 'Recreation',
+            'Regret', 'Relatives', 'Remember', 'Respect', 'Revenge', 'Rudeness',
+            'Rumor', 'School', 'Self Discipline', 'Self Worth', 'Selfishness', 'Service',
+            'Sports', 'Stereotype', 'Students', 'Support', 'Tact', 'Talents', 'Teaching',
+            'Teachers', 'Television', 'Temptation', 'Thinking', 'Thoughts', 'Traditions',
+            'Trust', 'Truth', 'Unity', 'Vacation', 'Values', 'Vision', 'War',
+            'Weaknesses', 'Work', 'Worry'
+        ].sort();
+
+        function ThreeWordJournal() {
+            const [entries, setEntries] = useState([]);
+            const [word1, setWord1] = useState('');
+            const [word2, setWord2] = useState('');
+            const [word3, setWord3] = useState('');
+            const [topic, setTopic] = useState('');
+            const [fullStory, setFullStory] = useState('');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedTopic, setSelectedTopic] = useState('All');
+            const [viewMode, setViewMode] = useState('grid');
+            const [expandedEntry, setExpandedEntry] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [modalEntry, setModalEntry] = useState(null);
+            const [inputMode, setInputMode] = useState('manual'); // 'ai' or 'manual'
+            const [suggestedWords, setSuggestedWords] = useState([]);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [experienceText, setExperienceText] = useState('');
+            const [isCustomTopic, setIsCustomTopic] = useState(false);
+            const [customTopic, setCustomTopic] = useState('');
+            const [experienceDate, setExperienceDate] = useState('');
+            const [isEditMode, setIsEditMode] = useState(false);
+            const [editWords, setEditWords] = useState(['', '', '']);
+            const [showAiNotice, setShowAiNotice] = useState(false);
+            const [isEditingStory, setIsEditingStory] = useState(false);
+            const [editStory, setEditStory] = useState('');
+            const [isEditingTopic, setIsEditingTopic] = useState(false);
+            const [editTopic, setEditTopic] = useState('');
+            const [isEditingDate, setIsEditingDate] = useState(false);
+            const [editDate, setEditDate] = useState('');
+
+            // Load entries from localStorage on mount
+            useEffect(() => {
+                const stored = localStorage.getItem('threeWordEntries');
+                if (stored) {
+                    setEntries(JSON.parse(stored));
+                }
+            }, []);
+
+            // Save entries to localStorage whenever they change
+            useEffect(() => {
+                if (entries.length > 0) {
+                    localStorage.setItem('threeWordEntries', JSON.stringify(entries));
+                }
+            }, [entries]);
+
+            const generateThreeWords = async () => {
+                if (!experienceText.trim()) {
+                    alert('Please describe your experience first');
+                    return;
+                }
+
+                setIsGenerating(true);
+                setSuggestedWords([]);
+
+                try {
+                    const response = await fetch("https://api.anthropic.com/v1/messages", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-20250514",
+                            max_tokens: 1000,
+                            messages: [
+                                {
+                                    role: "user",
+                                    content: `Based on this experience, suggest exactly 3 words that capture its essence. Follow these rules from "The 3 Word Journal":
+- Use specific, concrete words (not generalities)
+- Include a person, place, or thing if possible
+- Make the words uniquely identify this experience
+- Words should be memorable and evocative
+
+Experience: "${experienceText}"
+
+Respond with ONLY 3 words separated by commas, nothing else.`
+                                }
+                            ],
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('API Error:', errorData);
+                        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('API Response:', data);
+                    
+                    if (!data.content || !data.content[0] || !data.content[0].text) {
+                        throw new Error('Unexpected API response format');
+                    }
+                    
+                    const text = data.content[0].text.trim();
+                    const words = text.split(',').map(w => w.trim()).filter(w => w.length > 0).slice(0, 3);
+                    
+                    if (words.length < 3) {
+                        throw new Error('AI did not return 3 words. Try rephrasing your experience.');
+                    }
+                    
+                    setSuggestedWords(words);
+                    setWord1(words[0] || '');
+                    setWord2(words[1] || '');
+                    setWord3(words[2] || '');
+                } catch (error) {
+                    console.error('Error generating words:', error);
+                    
+                    const errorMessage = error.message || 'Unknown error';
+                    const userMessage = `AI word generation failed: ${errorMessage}\n\n` +
+                        `This feature requires:\n` +
+                        `• Active internet connection\n` +
+                        `• API access (may not work in all environments)\n\n` +
+                        `Switching to Manual Entry mode...`;
+                    
+                    alert(userMessage);
+                    
+                    // Automatically switch to manual mode as fallback
+                    setInputMode('manual');
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            const selectSuggestedWord = (word, position) => {
+                if (position === 1) setWord1(word);
+                else if (position === 2) setWord2(word);
+                else if (position === 3) setWord3(word);
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                
+                if (!word1 || !word2 || !word3) {
+                    alert('Please fill in all three words');
+                    return;
+                }
+
+                const finalTopic = isCustomTopic ? customTopic : topic;
+                if (!finalTopic) {
+                    alert('Please select or enter a topic');
+                    return;
+                }
+
+                const newEntry = {
+                    id: Date.now(),
+                    words: [word1, word2, word3],
+                    topic: finalTopic,
+                    experienceSummary: experienceText,
+                    fullStory: '',
+                    date: new Date().toISOString(),
+                    experienceDate: experienceDate || new Date().toISOString()
+                };
+
+                setEntries([newEntry, ...entries]);
+                
+                // Reset form
+                setWord1('');
+                setWord2('');
+                setWord3('');
+                setTopic('');
+                setFullStory('');
+                setExperienceText('');
+                setSuggestedWords([]);
+                setIsCustomTopic(false);
+                setCustomTopic('');
+                setExperienceDate('');
+            };
+
+            const deleteEntry = (id) => {
+                if (confirm('Are you sure you want to delete this entry?')) {
+                    setEntries(entries.filter(e => e.id !== id));
+                }
+            };
+
+            const openModal = (entry) => {
+                setModalEntry(entry);
+                setShowModal(true);
+                setIsEditMode(false);
+                setEditWords([...entry.words]);
+                setIsEditingStory(false);
+                setEditStory(entry.fullStory || '');
+                setIsEditingTopic(false);
+                setEditTopic(entry.topic);
+                setIsEditingDate(false);
+                setEditDate(entry.experienceDate || entry.date);
+            };
+
+            const startEdit = () => {
+                setIsEditMode(true);
+            };
+
+            const cancelEdit = () => {
+                setIsEditMode(false);
+                setEditWords([...modalEntry.words]);
+            };
+
+            const saveEdit = () => {
+                if (!editWords[0] || !editWords[1] || !editWords[2]) {
+                    alert('All three words are required');
+                    return;
+                }
+
+                const updatedEntries = entries.map(entry => 
+                    entry.id === modalEntry.id 
+                        ? { ...entry, words: editWords }
+                        : entry
+                );
+
+                setEntries(updatedEntries);
+                setModalEntry({ ...modalEntry, words: editWords });
+                setIsEditMode(false);
+            };
+
+            const startEditStory = () => {
+                setIsEditingStory(true);
+            };
+
+            const cancelEditStory = () => {
+                setIsEditingStory(false);
+                setEditStory(modalEntry.fullStory || '');
+            };
+
+            const saveStory = () => {
+                const updatedEntries = entries.map(entry => 
+                    entry.id === modalEntry.id 
+                        ? { ...entry, fullStory: editStory }
+                        : entry
+                );
+
+                setEntries(updatedEntries);
+                setModalEntry({ ...modalEntry, fullStory: editStory });
+                setIsEditingStory(false);
+            };
+
+            const startEditTopic = () => {
+                setIsEditingTopic(true);
+            };
+
+            const cancelEditTopic = () => {
+                setIsEditingTopic(false);
+                setEditTopic(modalEntry.topic);
+            };
+
+            const saveTopic = () => {
+                if (!editTopic.trim()) {
+                    alert('Topic cannot be empty');
+                    return;
+                }
+
+                const updatedEntries = entries.map(entry => 
+                    entry.id === modalEntry.id 
+                        ? { ...entry, topic: editTopic }
+                        : entry
+                );
+
+                setEntries(updatedEntries);
+                setModalEntry({ ...modalEntry, topic: editTopic });
+                setIsEditingTopic(false);
+            };
+
+            const startEditDate = () => {
+                setIsEditingDate(true);
+            };
+
+            const cancelEditDate = () => {
+                setIsEditingDate(false);
+                setEditDate(modalEntry.experienceDate || modalEntry.date);
+            };
+
+            const saveDate = () => {
+                if (!editDate) {
+                    alert('Date cannot be empty');
+                    return;
+                }
+
+                const updatedEntries = entries.map(entry => 
+                    entry.id === modalEntry.id 
+                        ? { ...entry, experienceDate: editDate }
+                        : entry
+                );
+
+                setEntries(updatedEntries);
+                setModalEntry({ ...modalEntry, experienceDate: editDate });
+                setIsEditingDate(false);
+            };
+
+            // Filter entries
+            const filteredEntries = entries.filter(entry => {
+                const matchesSearch = searchTerm === '' || 
+                    entry.words.some(w => w.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    entry.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (entry.experienceSummary && entry.experienceSummary.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                    (entry.fullStory && entry.fullStory.toLowerCase().includes(searchTerm.toLowerCase()));
+                
+                const matchesTopic = selectedTopic === 'All' || entry.topic === selectedTopic;
+                
+                return matchesSearch && matchesTopic;
+            });
+
+            // Get unique topics from entries
+            const usedTopics = ['All', ...new Set(entries.map(e => e.topic))].sort();
+
+            // Calculate stats
+            const stats = {
+                total: entries.length,
+                topics: new Set(entries.map(e => e.topic)).size,
+                thisMonth: entries.filter(e => {
+                    const entryDate = new Date(e.experienceDate || e.date);
+                    const now = new Date();
+                    return entryDate.getMonth() === now.getMonth() && 
+                           entryDate.getFullYear() === now.getFullYear();
+                }).length,
+                withStories: entries.filter(e => e.fullStory && e.fullStory.length > 0).length
+            };
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <h1>3 Word Journal</h1>
+                        <p className="subtitle">Capture life's lessons in just three words</p>
+                    </header>
+
+                    <div className="stats-bar">
+                        <div className="stat-card">
+                            <div className="stat-value">{stats.total}</div>
+                            <div className="stat-label">Total Entries</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{stats.topics}</div>
+                            <div className="stat-label">Topics</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{stats.thisMonth}</div>
+                            <div className="stat-label">This Month</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{stats.withStories}</div>
+                            <div className="stat-label">Full Stories</div>
+                        </div>
+                    </div>
+
+                    <div className="main-layout">
+                        <div className="quick-entry-card">
+                            <h2>New Entry</h2>
+                            <form onSubmit={handleSubmit}>
+                                <div className="form-group">
+                                    <label>Entry Mode</label>
+                                    <div className="input-mode-toggle">
+                                        <div 
+                                            className={`toggle-option ${inputMode === 'ai' ? 'active' : ''}`}
+                                            onClick={() => setInputMode('ai')}
+                                        >
+                                            ✨ AI Suggested
+                                        </div>
+                                        <div 
+                                            className={`toggle-option ${inputMode === 'manual' ? 'active' : ''}`}
+                                            onClick={() => setInputMode('manual')}
+                                        >
+                                            ✍️ Manual Entry
+                                        </div>
+                                    </div>
+                                    {inputMode === 'ai' && (
+                                        <div style={{
+                                            fontSize: '0.8rem',
+                                            color: 'var(--soft-gray)',
+                                            marginTop: '0.5rem',
+                                            fontStyle: 'italic'
+                                        }}>
+                                            Note: AI generation requires an active internet connection and may have limitations in some browsers.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {inputMode === 'ai' ? (
+                                    <>
+                                        <div className="form-group">
+                                            <label>Describe Your Experience</label>
+                                            <textarea
+                                                placeholder="Tell me about what happened... I'll help you distill it into three words."
+                                                value={experienceText}
+                                                onChange={(e) => setExperienceText(e.target.value)}
+                                                rows="4"
+                                            />
+                                        </div>
+
+                                        {suggestedWords.length > 0 && (
+                                            <div className="ai-suggestions-container">
+                                                <div className="ai-suggestions-header">
+                                                    <h3>✨ Suggested Words</h3>
+                                                    <button 
+                                                        type="button"
+                                                        className="btn-generate"
+                                                        onClick={generateThreeWords}
+                                                        disabled={isGenerating}
+                                                    >
+                                                        {isGenerating ? <span className="loading-spinner"></span> : 'Regenerate'}
+                                                    </button>
+                                                </div>
+                                                <div className="suggested-words">
+                                                    {suggestedWords.map((word, i) => (
+                                                        <div 
+                                                            key={i}
+                                                            className="suggested-word selected"
+                                                        >
+                                                            {word}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="suggestion-info">
+                                                    Click "Regenerate" for different suggestions, or edit the words below
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {suggestedWords.length === 0 && (
+                                            <div style={{ marginBottom: '1rem' }}>
+                                                <button 
+                                                    type="button"
+                                                    className="btn btn-primary"
+                                                    onClick={generateThreeWords}
+                                                    disabled={isGenerating || !experienceText.trim()}
+                                                >
+                                                    {isGenerating ? (
+                                                        <><span className="loading-spinner"></span> Generating...</>
+                                                    ) : (
+                                                        'Generate Three Words'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div className="form-group">
+                                            <label>Edit Your Three Words</label>
+                                            <div className="three-words-input">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 1"
+                                                    value={word1}
+                                                    onChange={(e) => setWord1(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 2"
+                                                    value={word2}
+                                                    onChange={(e) => setWord2(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 3"
+                                                    value={word3}
+                                                    onChange={(e) => setWord3(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="form-group">
+                                            <label>Three Words</label>
+                                            <div className="three-words-input">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 1"
+                                                    value={word1}
+                                                    onChange={(e) => setWord1(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 2"
+                                                    value={word2}
+                                                    onChange={(e) => setWord2(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Word 3"
+                                                    value={word3}
+                                                    onChange={(e) => setWord3(e.target.value)}
+                                                    maxLength="20"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Describe Your Experience (Optional)</label>
+                                            <textarea
+                                                placeholder="Quick summary of what happened..."
+                                                value={experienceText}
+                                                onChange={(e) => setExperienceText(e.target.value)}
+                                                rows="4"
+                                            />
+                                            <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
+                                                You can add the full detailed story later
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="form-group">
+                                    <label>Memory Cue / Topic</label>
+                                    <div className="topic-input-wrapper">
+                                        {isCustomTopic ? (
+                                            <>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter your custom topic..."
+                                                    value={customTopic}
+                                                    onChange={(e) => setCustomTopic(e.target.value)}
+                                                    maxLength="50"
+                                                />
+                                                <span 
+                                                    className="custom-topic-toggle"
+                                                    onClick={() => {
+                                                        setIsCustomTopic(false);
+                                                        setCustomTopic('');
+                                                    }}
+                                                >
+                                                    ← Back to preset topics
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <select 
+                                                    value={topic} 
+                                                    onChange={(e) => setTopic(e.target.value)}
+                                                >
+                                                    <option value="">Select a topic...</option>
+                                                    {TOPICS.map(t => (
+                                                        <option key={t} value={t}>{t}</option>
+                                                    ))}
+                                                </select>
+                                                <span 
+                                                    className="custom-topic-toggle"
+                                                    onClick={() => setIsCustomTopic(true)}
+                                                >
+                                                    + Add custom topic
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>When Did This Happen?</label>
+                                    <input
+                                        type="date"
+                                        value={experienceDate}
+                                        onChange={(e) => setExperienceDate(e.target.value)}
+                                        max={new Date().toISOString().split('T')[0]}
+                                    />
+                                    <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
+                                        Leave blank to use today's date
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="btn btn-primary">
+                                    Save Entry
+                                </button>
+                            </form>
+                        </div>
+
+                        <div className="entries-section">
+                            <div className="section-header">
+                                <h2>Your Journal</h2>
+                                <div className="view-toggle">
+                                    <button 
+                                        className={viewMode === 'grid' ? 'active' : ''}
+                                        onClick={() => setViewMode('grid')}
+                                    >
+                                        Grid
+                                    </button>
+                                    <button 
+                                        className={viewMode === 'list' ? 'active' : ''}
+                                        onClick={() => setViewMode('list')}
+                                    >
+                                        List
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="search-bar">
+                                <input
+                                    type="text"
+                                    placeholder="Search your journal..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="topic-filter">
+                                {usedTopics.map(t => (
+                                    <button
+                                        key={t}
+                                        className={`topic-tag ${selectedTopic === t ? 'active' : ''}`}
+                                        onClick={() => setSelectedTopic(t)}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {filteredEntries.length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">📖</div>
+                                    <h3>No entries yet</h3>
+                                    <p>Start capturing your life's experiences in three words</p>
+                                </div>
+                            ) : viewMode === 'grid' ? (
+                                <div className="entries-grid">
+                                    {filteredEntries.map(entry => (
+                                        <div 
+                                            key={entry.id} 
+                                            className="entry-card"
+                                            onClick={() => openModal(entry)}
+                                        >
+                                            <div className="entry-date">
+                                                {new Date(entry.experienceDate || entry.date).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                            </div>
+                                            <div className="entry-words">
+                                                {entry.words.map((word, i) => (
+                                                    <span key={i} className="word-badge">{word}</span>
+                                                ))}
+                                            </div>
+                                            <div className="entry-topic">{entry.topic}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="entries-list">
+                                    {filteredEntries.map(entry => (
+                                        <div 
+                                            key={entry.id} 
+                                            className="entry-list-item"
+                                            onClick={() => openModal(entry)}
+                                        >
+                                            <div className="entry-date">
+                                                {new Date(entry.experienceDate || entry.date).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </div>
+                                            <div className="entry-words">
+                                                {entry.words.map((word, i) => (
+                                                    <span key={i} className="word-badge">{word}</span>
+                                                ))}
+                                            </div>
+                                            <div className="entry-topic">{entry.topic}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {showModal && modalEntry && (
+                        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>Entry Details</h2>
+                                    <button 
+                                        className="modal-close"
+                                        onClick={() => setShowModal(false)}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {/* Date Section */}
+                                {isEditingDate ? (
+                                    <div className="inline-edit-container">
+                                        <div className="inline-edit-label">Edit Experience Date</div>
+                                        <input
+                                            type="date"
+                                            value={editDate.split('T')[0]}
+                                            onChange={(e) => setEditDate(e.target.value)}
+                                            max={new Date().toISOString().split('T')[0]}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.75rem',
+                                                border: '2px solid var(--accent-gold)',
+                                                borderRadius: '6px',
+                                                fontFamily: 'Crimson Pro, serif',
+                                                fontSize: '1rem',
+                                                marginBottom: '0.75rem'
+                                            }}
+                                        />
+                                        <div className="edit-actions">
+                                            <button className="btn btn-primary" onClick={saveDate} style={{ flex: 1 }}>
+                                                Save Date
+                                            </button>
+                                            <button className="btn-secondary" onClick={cancelEditDate} style={{ flex: 1 }}>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="entry-date" style={{marginBottom: '0.5rem', fontSize: '1rem', cursor: 'pointer'}} onClick={startEditDate}>
+                                        <strong>Experience Date:</strong><br/>
+                                        {new Date(modalEntry.experienceDate || modalEntry.date).toLocaleDateString('en-US', {
+                                            weekday: 'long',
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                        <span style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginLeft: '0.5rem'}}>✏️ Click to edit</span>
+                                    </div>
+                                )}
+
+                                {modalEntry.experienceDate && modalEntry.experienceDate !== modalEntry.date && !isEditingDate && (
+                                    <div className="entry-date" style={{marginBottom: '1rem', fontSize: '0.85rem', opacity: 0.7}}>
+                                        Recorded: {new Date(modalEntry.date).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Three Words Section */}
+                                {isEditMode ? (
+                                    <div className="edit-mode-container">
+                                        <div className="inline-edit-label">Edit Three Words</div>
+                                        <div className="edit-words-input">
+                                            <input
+                                                type="text"
+                                                value={editWords[0]}
+                                                onChange={(e) => setEditWords([e.target.value, editWords[1], editWords[2]])}
+                                                maxLength="20"
+                                                placeholder="Word 1"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={editWords[1]}
+                                                onChange={(e) => setEditWords([editWords[0], e.target.value, editWords[2]])}
+                                                maxLength="20"
+                                                placeholder="Word 2"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={editWords[2]}
+                                                onChange={(e) => setEditWords([editWords[0], editWords[1], e.target.value])}
+                                                maxLength="20"
+                                                placeholder="Word 3"
+                                            />
+                                        </div>
+                                        <div className="edit-actions">
+                                            <button className="btn btn-primary" onClick={saveEdit} style={{ flex: 1 }}>
+                                                Save Words
+                                            </button>
+                                            <button className="btn-secondary" onClick={cancelEdit} style={{ flex: 1 }}>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{marginBottom: '1rem'}}>
+                                        <div className="entry-words">
+                                            {modalEntry.words.map((word, i) => (
+                                                <span key={i} className="word-badge">{word}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Topic Section */}
+                                {isEditingTopic ? (
+                                    <div className="inline-edit-container">
+                                        <div className="inline-edit-label">Edit Topic</div>
+                                        <input
+                                            type="text"
+                                            value={editTopic}
+                                            onChange={(e) => setEditTopic(e.target.value)}
+                                            maxLength="50"
+                                            placeholder="Enter topic..."
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.75rem',
+                                                border: '2px solid var(--accent-gold)',
+                                                borderRadius: '6px',
+                                                fontFamily: 'Crimson Pro, serif',
+                                                fontSize: '1rem',
+                                                marginBottom: '0.75rem'
+                                            }}
+                                        />
+                                        <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
+                                            Or select from presets:
+                                        </div>
+                                        <select 
+                                            value={editTopic}
+                                            onChange={(e) => setEditTopic(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.75rem',
+                                                border: '2px solid rgba(196, 166, 97, 0.3)',
+                                                borderRadius: '6px',
+                                                fontFamily: 'Crimson Pro, serif',
+                                                fontSize: '1rem',
+                                                marginBottom: '0.75rem'
+                                            }}
+                                        >
+                                            <option value="">Choose a preset topic...</option>
+                                            {TOPICS.map(t => (
+                                                <option key={t} value={t}>{t}</option>
+                                            ))}
+                                        </select>
+                                        <div className="edit-actions">
+                                            <button className="btn btn-primary" onClick={saveTopic} style={{ flex: 1 }}>
+                                                Save Topic
+                                            </button>
+                                            <button className="btn-secondary" onClick={cancelEditTopic} style={{ flex: 1 }}>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{marginBottom: '1.5rem'}}>
+                                        <div className="entry-topic" style={{display: 'inline-block', cursor: 'pointer'}} onClick={startEditTopic}>
+                                            {modalEntry.topic}
+                                            <span style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginLeft: '0.5rem'}}>✏️</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quick Summary */}
+                                {modalEntry.experienceSummary && (
+                                    <div style={{
+                                        padding: '1rem',
+                                        background: 'rgba(196, 166, 97, 0.1)',
+                                        borderRadius: '8px',
+                                        marginBottom: '1.5rem',
+                                        borderLeft: '3px solid var(--accent-gold)'
+                                    }}>
+                                        <div style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: 600,
+                                            color: 'var(--warm-brown)',
+                                            marginBottom: '0.5rem',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
+                                        }}>
+                                            Quick Summary
+                                        </div>
+                                        <div style={{
+                                            color: 'var(--warm-brown)',
+                                            lineHeight: '1.6'
+                                        }}>
+                                            {modalEntry.experienceSummary}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="modal-actions-grid">
+                                    <button className="action-button" onClick={startEdit}>
+                                        ✏️ Edit Words
+                                    </button>
+                                    <button className="action-button" onClick={startEditTopic}>
+                                        🏷️ Change Topic
+                                    </button>
+                                    <button className="action-button" onClick={startEditDate}>
+                                        📅 Change Date
+                                    </button>
+                                    <button className="action-button" onClick={isEditingStory ? cancelEditStory : startEditStory}>
+                                        {modalEntry.fullStory ? '📖 Edit Story' : '📝 Add Story'}
+                                    </button>
+                                </div>
+
+                                {/* Full Story Section */}
+                                {isEditingStory ? (
+                                    <div className="edit-mode-container">
+                                        <label style={{
+                                            display: 'block',
+                                            fontWeight: 600,
+                                            marginBottom: '0.75rem',
+                                            color: 'var(--warm-brown)',
+                                            fontFamily: 'Montserrat, sans-serif',
+                                            fontSize: '0.9rem',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
+                                        }}>
+                                            {modalEntry.fullStory ? 'Edit Full Story' : 'Add Full Story'}
+                                        </label>
+                                        <textarea
+                                            value={editStory}
+                                            onChange={(e) => setEditStory(e.target.value)}
+                                            rows="10"
+                                            placeholder="Write the full, detailed version of this experience... Include the context, what happened, what you learned, and why it matters."
+                                            style={{
+                                                width: '100%',
+                                                padding: '1rem',
+                                                border: '2px solid rgba(196, 166, 97, 0.3)',
+                                                borderRadius: '8px',
+                                                fontFamily: 'Crimson Pro, serif',
+                                                fontSize: '1rem',
+                                                background: 'white',
+                                                color: 'var(--dark-brown)',
+                                                lineHeight: '1.6',
+                                                marginBottom: '1rem'
+                                            }}
+                                        />
+                                        <div className="edit-actions">
+                                            <button className="btn btn-primary" onClick={saveStory} style={{ flex: 1 }}>
+                                                Save Story
+                                            </button>
+                                            <button className="btn-secondary" onClick={cancelEditStory} style={{ flex: 1 }}>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : modalEntry.fullStory ? (
+                                    <div style={{
+                                        padding: '1.5rem',
+                                        background: 'var(--cream)',
+                                        borderRadius: '8px',
+                                        lineHeight: '1.8',
+                                        color: 'var(--warm-brown)',
+                                        marginBottom: '1rem'
+                                    }}>
+                                        <div style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: 600,
+                                            color: 'var(--dark-brown)',
+                                            marginBottom: '1rem',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
+                                        }}>
+                                            Full Story
+                                        </div>
+                                        {modalEntry.fullStory}
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        padding: '1.5rem',
+                                        background: 'rgba(196, 166, 97, 0.05)',
+                                        borderRadius: '8px',
+                                        border: '2px dashed rgba(196, 166, 97, 0.3)',
+                                        textAlign: 'center',
+                                        color: 'var(--soft-gray)',
+                                        marginBottom: '1rem'
+                                    }}>
+                                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📖</div>
+                                        <div style={{ fontSize: '0.9rem' }}>No full story yet</div>
+                                        <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                            Click "Add Story" above to write the detailed version
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Delete Button */}
+                                <button
+                                    className="action-button danger"
+                                    onClick={() => {
+                                        if (confirm('Are you sure you want to delete this entry? This cannot be undone.')) {
+                                            deleteEntry(modalEntry.id);
+                                            setShowModal(false);
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        marginTop: '1rem'
+                                    }}
+                                >
+                                    🗑️ Delete Entry
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ThreeWordJournal />, document.getElementById('root'));
+    </script>
+</body>
+</html>
