@@ -209,8 +209,28 @@ body {
 
 /* Ensure date input matches textarea padding on all devices */
 .form-group input[type="date"] {
-    padding: 0.85rem;
-    box-sizing: border-box;
+    padding: 0.85rem !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+/* Fix date input on iOS/Safari */
+.form-group input[type="date"]::-webkit-inner-spin-button,
+.form-group input[type="date"]::-webkit-calendar-picker-indicator {
+    margin-left: 0;
+    padding: 0;
+}
+
+/* Ensure date input text is properly positioned */
+.form-group input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+}
+
+.form-group input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
 }
 
 .form-group input:focus,
@@ -1290,9 +1310,11 @@ body {
     
     /* Fix date input padding on mobile to match textarea */
     .form-group input[type="date"] {
-        padding: 0.85rem;
-        box-sizing: border-box;
-        width: 100%;
+        padding: 0.85rem !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        min-width: 0;
+        -webkit-appearance: none;
     }
 }
 
