@@ -11,6 +11,7 @@ export default function JournalView({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
+    const [specificYear, setSpecificYear] = useState('');
 
     // Get all unique tags from entries
     const allTags = useMemo(() => {
@@ -64,6 +65,14 @@ export default function JournalView({
                     case 'thisYear':
                         matchesDate = entryDate.getFullYear() === now.getFullYear();
                         break;
+                    case 'specificYear':
+                        if (specificYear && specificYear.trim()) {
+                            const year = parseInt(specificYear.trim());
+                            matchesDate = !isNaN(year) && entryDate.getFullYear() === year;
+                        } else {
+                            matchesDate = false;
+                        }
+                        break;
                     default:
                         matchesDate = true;
                 }
@@ -71,7 +80,7 @@ export default function JournalView({
             
             return matchesSearch && matchesTags && matchesDate;
         });
-    }, [entries, searchTerm, selectedTags, dateFilter]);
+    }, [entries, searchTerm, selectedTags, dateFilter, specificYear]);
 
     const toggleTag = (tag) => {
         setSelectedTags(prev => 
@@ -85,9 +94,10 @@ export default function JournalView({
         setSearchTerm('');
         setSelectedTags([]);
         setDateFilter('all');
+        setSpecificYear('');
     };
 
-    const hasActiveFilters = searchTerm || selectedTags.length > 0 || dateFilter !== 'all';
+    const hasActiveFilters = searchTerm || selectedTags.length > 0 || (dateFilter !== 'all' && !(dateFilter === 'specificYear' && !specificYear.trim()));
 
     return (
         <div className="journal-view">
@@ -176,7 +186,12 @@ export default function JournalView({
                     <select
                         id="date-filter"
                         value={dateFilter}
-                        onChange={(e) => setDateFilter(e.target.value)}
+                        onChange={(e) => {
+                            setDateFilter(e.target.value);
+                            if (e.target.value !== 'specificYear') {
+                                setSpecificYear('');
+                            }
+                        }}
                         aria-label="Filter entries by date"
                     >
                         <option value="all">All Time</option>
@@ -184,7 +199,32 @@ export default function JournalView({
                         <option value="thisWeek">This Week</option>
                         <option value="thisMonth">This Month</option>
                         <option value="thisYear">This Year</option>
+                        <option value="specificYear">Specific Year</option>
                     </select>
+                    {dateFilter === 'specificYear' && (
+                        <input
+                            type="number"
+                            id="specific-year-input"
+                            value={specificYear}
+                            onChange={(e) => setSpecificYear(e.target.value)}
+                            placeholder="Enter year (e.g., 2024)"
+                            min="1900"
+                            max={new Date().getFullYear()}
+                            style={{
+                                marginTop: '0.5rem',
+                                width: '100%',
+                                padding: '0.75rem',
+                                border: '2px solid rgba(196, 166, 97, 0.3)',
+                                borderRadius: '8px',
+                                fontFamily: 'Crimson Pro, serif',
+                                fontSize: '1rem',
+                                background: 'var(--cream)',
+                                color: 'var(--dark-brown)',
+                                boxSizing: 'border-box'
+                            }}
+                            aria-label="Enter specific year to filter"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -196,8 +236,11 @@ export default function JournalView({
                     {selectedTags.map(tag => (
                         <span key={tag} className="filter-badge">{tag}</span>
                     ))}
-                    {dateFilter !== 'all' && (
+                    {dateFilter !== 'all' && dateFilter !== 'specificYear' && (
                         <span className="filter-badge">Date: {dateFilter.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    )}
+                    {dateFilter === 'specificYear' && specificYear.trim() && (
+                        <span className="filter-badge">Year: {specificYear}</span>
                     )}
                     <button
                         type="button"
