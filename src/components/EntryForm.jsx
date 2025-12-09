@@ -1,5 +1,4 @@
 import React from 'react';
-import { TOPICS } from '../utils/constants';
 
 export default function EntryForm({
     inputMode,
@@ -10,16 +9,10 @@ export default function EntryForm({
     setWord2,
     word3,
     setWord3,
-    topic,
-    setTopic,
     experienceText,
     setExperienceText,
     experienceDate,
     setExperienceDate,
-    isCustomTopic,
-    setIsCustomTopic,
-    customTopic,
-    setCustomTopic,
     suggestedWords,
     isGenerating,
     generateThreeWords,
@@ -216,70 +209,6 @@ export default function EntryForm({
                     </>
                 )}
 
-                <div className="form-group">
-                    <label htmlFor="topic-select">Memory Cue / Topic</label>
-                    <div className="topic-input-wrapper">
-                        {isCustomTopic ? (
-                            <>
-                                <input
-                                    id="topic-custom"
-                                    type="text"
-                                    placeholder="Enter your custom topic..."
-                                    value={customTopic}
-                                    onChange={(e) => setCustomTopic(e.target.value)}
-                                    maxLength="50"
-                                    aria-label="Custom topic"
-                                />
-                                <span 
-                                    className="custom-topic-toggle"
-                                    onClick={() => {
-                                        setIsCustomTopic(false);
-                                        setCustomTopic('');
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            setIsCustomTopic(false);
-                                            setCustomTopic('');
-                                        }
-                                    }}
-                                >
-                                    ← Back to preset topics
-                                </span>
-                            </>
-                        ) : (
-                            <>
-                                <select 
-                                    id="topic-select"
-                                    value={topic} 
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    aria-label="Select a topic"
-                                >
-                                    <option value="">Select a topic...</option>
-                                    {TOPICS.map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
-                                <span 
-                                    className="custom-topic-toggle"
-                                    onClick={() => setIsCustomTopic(true)}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            setIsCustomTopic(true);
-                                        }
-                                    }}
-                                >
-                                    + Add custom topic
-                                </span>
-                            </>
-                        )}
-                    </div>
-                </div>
 
                 <div className="form-group">
                     <label htmlFor="experience-date">When Did This Happen?</label>

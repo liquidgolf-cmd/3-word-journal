@@ -8,8 +8,8 @@ export default function StatsBar({ stats }) {
                 <div className="stat-label">Total Entries</div>
             </div>
             <div className="stat-card">
-                <div className="stat-value">{stats.topics}</div>
-                <div className="stat-label">Topics</div>
+                <div className="stat-value">{stats.tags}</div>
+                <div className="stat-label">Tags</div>
             </div>
             <div className="stat-card">
                 <div className="stat-value">{stats.thisMonth}</div>

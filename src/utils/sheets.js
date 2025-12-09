@@ -171,7 +171,7 @@ export const createSpreadsheet = async (title = '3 Word Journal') => {
 // Set up headers in the spreadsheet
 const setHeaders = async (spreadsheetId) => {
     const headers = [
-        ['Date', 'Word 1', 'Word 2', 'Word 3', 'Topic', 'Experience Summary', 'Full Story', 'Experience Date', 'Entry ID']
+        ['Date', 'Word 1', 'Word 2', 'Word 3', 'Tags', 'Experience Summary', 'Full Story', 'Experience Date', 'Entry ID']
     ];
 
     try {
@@ -251,7 +251,7 @@ export const syncToSheets = async (entries, spreadsheetId = null) => {
             entry.words[0] || '',
             entry.words[1] || '',
             entry.words[2] || '',
-            entry.topic || '',
+            (entry.tags && Array.isArray(entry.tags) ? entry.tags.join(', ') : '') || '',
             entry.experienceSummary || '',
             entry.fullStory || '',
             entry.experienceDate ? new Date(entry.experienceDate).toLocaleDateString() : '',

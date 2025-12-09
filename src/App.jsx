@@ -1,41 +1,31 @@
 import { useState, useEffect } from 'react';
-import { TOPICS } from './utils/constants';
-import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, getUserStorageKey } from './utils/storage';
+import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, migrateEntriesToTags } from './utils/storage';
 import { GOOGLE_CLIENT_ID, initializeGoogleSignIn, renderGoogleButton, decodeJWT, handleLogout as authLogout } from './utils/auth';
 import { initGapi, requestAuth, syncToSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
 import MessageBanner from './components/MessageBanner';
 import StatsBar from './components/StatsBar';
-import EntryForm from './components/EntryForm';
+import TabNavigation from './components/TabNavigation';
+import InputView from './components/InputView';
+import JournalView from './components/JournalView';
 
 function App() {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [entries, setEntries] = useState([]);
-    const [word1, setWord1] = useState('');
-    const [word2, setWord2] = useState('');
-    const [word3, setWord3] = useState('');
-    const [topic, setTopic] = useState('');
-    const [fullStory, setFullStory] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedTopic, setSelectedTopic] = useState('All');
+    const [currentView, setCurrentView] = useState('input');
+    const [editingEntry, setEditingEntry] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
-    const [expandedEntry, setExpandedEntry] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalEntry, setModalEntry] = useState(null);
-    const [inputMode, setInputMode] = useState('manual');
     const [suggestedWords, setSuggestedWords] = useState([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [experienceText, setExperienceText] = useState('');
-    const [isCustomTopic, setIsCustomTopic] = useState(false);
-    const [customTopic, setCustomTopic] = useState('');
-    const [experienceDate, setExperienceDate] = useState('');
     const [isEditMode, setIsEditMode] = useState(false);
     const [editWords, setEditWords] = useState(['', '', '']);
-    const [showAiNotice, setShowAiNotice] = useState(false);
     const [isEditingStory, setIsEditingStory] = useState(false);
     const [editStory, setEditStory] = useState('');
-    const [isEditingTopic, setIsEditingTopic] = useState(false);
-    const [editTopic, setEditTopic] = useState('');
+    const [isEditingTags, setIsEditingTags] = useState(false);
+    const [editTags, setEditTags] = useState([]);
     const [isEditingDate, setIsEditingDate] = useState(false);
     const [editDate, setEditDate] = useState('');
     const [error, setError] = useState(null);
@@ -43,14 +33,23 @@ function App() {
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [sheetsAuthorized, setSheetsAuthorized] = useState(false);
+    const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
-    // Initialize Google Sign-In and Sheets API
+    // Initialize Google Sign-In and Sheets API, and migrate entries
     useEffect(() => {
         const savedUser = loadUser();
         if (savedUser && savedUser.sub && savedUser.email) {
             setUser(savedUser);
             setIsAuthenticated(true);
-            const userEntries = loadUserEntries(savedUser.sub);
+            let userEntries = loadUserEntries(savedUser.sub);
+            
+            // Run migration: convert topic to tags
+            const needsMigration = userEntries.some(entry => entry.topic && !entry.tags);
+            if (needsMigration) {
+                userEntries = migrateEntriesToTags(userEntries);
+                saveUserEntries(savedUser.sub, userEntries);
+            }
+            
             setEntries(userEntries);
         }
 
@@ -58,13 +57,10 @@ function App() {
             if (GOOGLE_CLIENT_ID) {
                 initializeGoogleSignIn(handleCredentialResponse);
                 
-                // Initialize Google Sheets API (only if gapi is available)
-                // This will fail silently if the library hasn't loaded yet
                 if (typeof window !== 'undefined' && window.gapi) {
                     initGapi(GOOGLE_CLIENT_ID).then(() => {
                         setSheetsAuthorized(isAuthorized());
                     }).catch(err => {
-                        // Silently fail - will retry when user clicks sync button
                         console.log('Sheets API not initialized yet (will initialize on first sync):', err.message);
                     });
                 }
@@ -111,7 +107,15 @@ function App() {
             setUser(userInfo);
             setIsAuthenticated(true);
             saveUser(userInfo);
-            const userEntries = loadUserEntries(userData.sub);
+            let userEntries = loadUserEntries(userData.sub);
+            
+            // Run migration if needed
+            const needsMigration = userEntries.some(entry => entry.topic && !entry.tags);
+            if (needsMigration) {
+                userEntries = migrateEntriesToTags(userEntries);
+                saveUserEntries(userData.sub, userEntries);
+            }
+            
             setEntries(userEntries);
         } catch (e) {
             console.error('Error processing credential:', e);
@@ -126,6 +130,8 @@ function App() {
         setIsAuthenticated(false);
         setEntries([]);
         clearUser();
+        setCurrentView('input');
+        setEditingEntry(null);
     };
 
     // Save entries when they change
@@ -147,10 +153,6 @@ function App() {
         setError(null);
 
         try {
-            console.log('Starting AI word generation...');
-            console.log('Experience text length:', experienceText.length);
-
-            console.log('Making API request to our proxy endpoint...');
             const response = await fetch("/api/generate-words", {
                 method: "POST",
                 headers: {
@@ -161,118 +163,54 @@ function App() {
                 })
             });
 
-            console.log('Response status:', response.status, response.statusText);
-
             if (!response.ok) {
                 let errorData;
                 try {
                     errorData = await response.json();
-                    console.error('API Error Response:', errorData);
                 } catch (e) {
                     const errorText = await response.text();
-                    console.error('API Error Text:', errorText);
                     throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
                 }
                 throw new Error(errorData.error || `API request failed: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log('API Response:', data);
             
             if (!data.words || !Array.isArray(data.words) || data.words.length < 3) {
-                console.error('Unexpected response format:', data);
                 throw new Error('Unexpected API response format. Check console for details.');
             }
             
             const words = data.words;
-            console.log('Parsed words:', words);
-            
-            console.log('Setting words:', words);
             setSuggestedWords(words);
-            setWord1(words[0] || '');
-            setWord2(words[1] || '');
-            setWord3(words[2] || '');
-            console.log('Successfully generated and set words!');
         } catch (error) {
             console.error('Error generating words:', error);
-            console.error('Error stack:', error.stack);
             let errorMessage = error.message || 'Unknown error occurred';
             
-            // Provide more helpful error messages
             if (errorMessage.includes('API key') || errorMessage.includes('ANTHROPIC_API_KEY')) {
-                errorMessage = 'AI feature requires an API key. Please configure ANTHROPIC_API_KEY in your Vercel environment variables. See ANTHROPIC_API_SETUP.md for instructions.';
+                errorMessage = 'AI feature requires an API key. Please configure ANTHROPIC_API_KEY in your Vercel environment variables.';
             } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
                 errorMessage = 'Invalid API key. Please check your Anthropic API key configuration.';
             } else if (errorMessage.includes('429')) {
                 errorMessage = 'API rate limit exceeded. Please try again in a moment.';
-            } else if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
                 errorMessage = 'Network error. Please check your internet connection and try again.';
-            } else if (errorMessage.includes('CORS')) {
-                errorMessage = 'CORS error. The API may not allow requests from this origin. Check browser console for details.';
             }
             
-            const fullErrorMessage = `AI word generation failed: ${errorMessage}`;
-            console.error(fullErrorMessage);
-            setError(fullErrorMessage);
-            setInputMode('manual');
+            setError(`AI word generation failed: ${errorMessage}`);
             setTimeout(() => setError(null), 10000);
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setError(null);
-        setSuccessMessage(null);
-        
-        if (!word1 || !word2 || !word3) {
-            setError('Please fill in all three words');
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-
-        const finalTopic = isCustomTopic ? customTopic : topic;
-        if (!finalTopic) {
-            setError('Please select or enter a topic');
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-
-        const newEntry = {
-            id: Date.now(),
-            words: [word1, word2, word3],
-            topic: finalTopic,
-            experienceSummary: experienceText,
-            fullStory: '',
-            date: new Date().toISOString(),
-            experienceDate: experienceDate || new Date().toISOString()
-        };
-
-        setEntries([newEntry, ...entries]);
-        
-        // Reset form
-        setWord1('');
-        setWord2('');
-        setWord3('');
-        setTopic('');
-        setFullStory('');
-                setExperienceText('');
-                setSuggestedWords([]);
-                setIsCustomTopic(false);
-                setCustomTopic('');
-                setExperienceDate('');
-                setSuccessMessage('Entry saved successfully!');
-                setTimeout(() => setSuccessMessage(null), 3000);
-            };
-
-    const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-
     const deleteEntry = (id) => {
         setEntries(entries.filter(e => e.id !== id));
         setDeleteConfirmId(null);
         setSuccessMessage('Entry deleted successfully');
         setTimeout(() => setSuccessMessage(null), 3000);
+        if (showModal && modalEntry && modalEntry.id === id) {
+            setShowModal(false);
+        }
     };
 
     const openModal = (entry) => {
@@ -282,10 +220,19 @@ function App() {
         setEditWords([...entry.words]);
         setIsEditingStory(false);
         setEditStory(entry.fullStory || '');
-        setIsEditingTopic(false);
-        setEditTopic(entry.topic);
+        setIsEditingTags(false);
+        setEditTags(entry.tags || []);
         setIsEditingDate(false);
         setEditDate(entry.experienceDate || entry.date);
+    };
+
+    const handleEditEntry = (entry) => {
+        setEditingEntry(entry);
+        setCurrentView('input');
+    };
+
+    const handleSaveComplete = () => {
+        setCurrentView('journal');
     };
 
     const startEdit = () => setIsEditMode(true);
@@ -330,28 +277,22 @@ function App() {
         setIsEditingStory(false);
     };
 
-    const startEditTopic = () => setIsEditingTopic(true);
-    const cancelEditTopic = () => {
-        setIsEditingTopic(false);
-        setEditTopic(modalEntry.topic);
+    const startEditTags = () => setIsEditingTags(true);
+    const cancelEditTags = () => {
+        setIsEditingTags(false);
+        setEditTags(modalEntry.tags || []);
     };
 
-    const saveTopic = () => {
-        if (!editTopic.trim()) {
-            setError('Topic cannot be empty');
-            setTimeout(() => setError(null), 3000);
-            return;
-        }
-
+    const saveTags = () => {
         const updatedEntries = entries.map(entry => 
             entry.id === modalEntry.id 
-                ? { ...entry, topic: editTopic }
+                ? { ...entry, tags: editTags }
                 : entry
         );
 
         setEntries(updatedEntries);
-        setModalEntry({ ...modalEntry, topic: editTopic });
-        setIsEditingTopic(false);
+        setModalEntry({ ...modalEntry, tags: editTags });
+        setIsEditingTags(false);
     };
 
     const startEditDate = () => setIsEditingDate(true);
@@ -378,18 +319,18 @@ function App() {
         setIsEditingDate(false);
     };
 
-    // Filter entries
-    const filteredEntries = entries.filter(entry => {
-        const matchesSearch = searchTerm === '' || 
-            entry.words.some(w => w.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            entry.topic.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (entry.experienceSummary && entry.experienceSummary.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (entry.fullStory && entry.fullStory.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-        const matchesTopic = selectedTopic === 'All' || entry.topic === selectedTopic;
-        
-        return matchesSearch && matchesTopic;
-    });
+    // Calculate stats
+    const stats = {
+        total: entries.length,
+        tags: new Set(entries.flatMap(e => e.tags || [])).size,
+        thisMonth: entries.filter(e => {
+            const entryDate = new Date(e.experienceDate || e.date);
+            const now = new Date();
+            return entryDate.getMonth() === now.getMonth() && 
+                   entryDate.getFullYear() === now.getFullYear();
+        }).length,
+        withStories: entries.filter(e => e.fullStory && e.fullStory.length > 0).length
+    };
 
     // Data Export/Import
     const exportData = () => {
@@ -407,7 +348,6 @@ function App() {
         setTimeout(() => setSuccessMessage(null), 3000);
     };
 
-    // Sync to Google Sheets
     const handleSyncToSheets = async () => {
         if (entries.length === 0) {
             setError('No entries to sync. Create some entries first!');
@@ -420,16 +360,13 @@ function App() {
         setSuccessMessage(null);
 
         try {
-            // Initialize gapi if not already done
             if (!window.gapi || !window.gapi.client || !window.gapi.client.sheets) {
                 console.log('Initializing Google Sheets API...');
                 await initGapi(GOOGLE_CLIENT_ID);
             }
 
-            // Check if already authorized
             if (!isAuthorized()) {
                 console.log('Requesting Google Sheets authorization...');
-                // Request authorization
                 await requestAuth(GOOGLE_CLIENT_ID);
                 setSheetsAuthorized(true);
                 console.log('Authorization granted');
@@ -437,10 +374,7 @@ function App() {
                 console.log('Already authorized for Google Sheets');
             }
 
-            // Get or create spreadsheet
             const spreadsheetId = getStoredSpreadsheetId();
-            
-            // Sync entries
             const result = await syncToSheets(entries, spreadsheetId);
 
             setSuccessMessage(
@@ -474,7 +408,9 @@ function App() {
             try {
                 const imported = JSON.parse(e.target.result);
                 if (Array.isArray(imported)) {
-                    setEntries([...imported, ...entries]);
+                    // Migrate imported entries if needed
+                    const migrated = migrateEntriesToTags(imported);
+                    setEntries([...migrated, ...entries]);
                     setSuccessMessage(`Successfully imported ${imported.length} entries!`);
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } else {
@@ -487,23 +423,7 @@ function App() {
             }
         };
         reader.readAsText(file);
-        event.target.value = ''; // Reset input
-    };
-
-    // Get unique topics from entries
-    const usedTopics = ['All', ...new Set(entries.map(e => e.topic))].sort();
-
-    // Calculate stats
-    const stats = {
-        total: entries.length,
-        topics: new Set(entries.map(e => e.topic)).size,
-        thisMonth: entries.filter(e => {
-            const entryDate = new Date(e.experienceDate || e.date);
-            const now = new Date();
-            return entryDate.getMonth() === now.getMonth() && 
-                   entryDate.getFullYear() === now.getFullYear();
-        }).length,
-        withStories: entries.filter(e => e.fullStory && e.fullStory.length > 0).length
+        event.target.value = '';
     };
 
     // Show login screen if not authenticated
@@ -614,157 +534,34 @@ function App() {
 
             <StatsBar stats={stats} />
 
-            <div className="main-layout">
-                <EntryForm
-                    inputMode={inputMode}
-                    setInputMode={setInputMode}
-                    word1={word1}
-                    setWord1={setWord1}
-                    word2={word2}
-                    setWord2={setWord2}
-                    word3={word3}
-                    setWord3={setWord3}
-                    topic={topic}
-                    setTopic={setTopic}
+            <TabNavigation currentView={currentView} onViewChange={setCurrentView} />
+
+            {currentView === 'input' ? (
+                <InputView
+                    entries={entries}
+                    setEntries={setEntries}
+                    editingEntry={editingEntry}
+                    setEditingEntry={setEditingEntry}
+                    onSaveComplete={handleSaveComplete}
+                    generateThreeWords={generateThreeWords}
+                    isGenerating={isGenerating}
+                    suggestedWords={suggestedWords}
                     experienceText={experienceText}
                     setExperienceText={setExperienceText}
-                    experienceDate={experienceDate}
-                    setExperienceDate={setExperienceDate}
-                    isCustomTopic={isCustomTopic}
-                    setIsCustomTopic={setIsCustomTopic}
-                    customTopic={customTopic}
-                    setCustomTopic={setCustomTopic}
-                    suggestedWords={suggestedWords}
-                    isGenerating={isGenerating}
-                    generateThreeWords={generateThreeWords}
-                    handleSubmit={handleSubmit}
+                    setError={setError}
+                    setSuccessMessage={setSuccessMessage}
                 />
+            ) : (
+                <JournalView
+                    entries={entries}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    onEntryClick={openModal}
+                    onEditEntry={handleEditEntry}
+                />
+            )}
 
-                <div className="entries-section">
-                    <div className="section-header">
-                        <h2>Your Journal</h2>
-                        <div className="view-toggle" role="tablist">
-                            <button 
-                                className={viewMode === 'grid' ? 'active' : ''}
-                                onClick={() => setViewMode('grid')}
-                                role="tab"
-                                aria-selected={viewMode === 'grid'}
-                                aria-label="Grid view"
-                            >
-                                Grid
-                            </button>
-                            <button 
-                                className={viewMode === 'list' ? 'active' : ''}
-                                onClick={() => setViewMode('list')}
-                                role="tab"
-                                aria-selected={viewMode === 'list'}
-                                aria-label="List view"
-                            >
-                                List
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="search-bar">
-                        <input
-                            type="text"
-                            placeholder="Search your journal..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            aria-label="Search journal entries"
-                        />
-                    </div>
-
-                    <div className="topic-filter" role="group" aria-label="Filter by topic">
-                        {usedTopics.map(t => (
-                            <button
-                                key={t}
-                                className={`topic-tag ${selectedTopic === t ? 'active' : ''}`}
-                                onClick={() => setSelectedTopic(t)}
-                                aria-pressed={selectedTopic === t}
-                                aria-label={`Filter by ${t} topic`}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
-
-                    {filteredEntries.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-state-icon" aria-hidden="true">📖</div>
-                            <h3>No entries yet</h3>
-                            <p>Start capturing your life's experiences in three words</p>
-                        </div>
-                    ) : viewMode === 'grid' ? (
-                        <div className="entries-grid" role="list">
-                            {filteredEntries.map(entry => (
-                                <div 
-                                    key={entry.id} 
-                                    className="entry-card"
-                                    onClick={() => openModal(entry)}
-                                    role="listitem"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            openModal(entry);
-                                        }
-                                    }}
-                                    aria-label={`Entry: ${entry.words.join(', ')} - ${entry.topic}`}
-                                >
-                                    <div className="entry-date">
-                                        {new Date(entry.experienceDate || entry.date).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        })}
-                                    </div>
-                                    <div className="entry-words">
-                                        {entry.words.map((word, i) => (
-                                            <span key={i} className="word-badge">{word}</span>
-                                        ))}
-                                    </div>
-                                    <div className="entry-topic">{entry.topic}</div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="entries-list" role="list">
-                            {filteredEntries.map(entry => (
-                                <div 
-                                    key={entry.id} 
-                                    className="entry-list-item"
-                                    onClick={() => openModal(entry)}
-                                    role="listitem"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            openModal(entry);
-                                        }
-                                    }}
-                                    aria-label={`Entry: ${entry.words.join(', ')} - ${entry.topic}`}
-                                >
-                                    <div className="entry-date">
-                                        {new Date(entry.experienceDate || entry.date).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
-                                        })}
-                                    </div>
-                                    <div className="entry-words">
-                                        {entry.words.map((word, i) => (
-                                            <span key={i} className="word-badge">{word}</span>
-                                        ))}
-                                    </div>
-                                    <div className="entry-topic">{entry.topic}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
+            {/* Entry Detail Modal */}
             {showModal && modalEntry && (
                 <div 
                     className="modal-overlay" 
@@ -899,77 +696,78 @@ function App() {
                             </div>
                         )}
 
-                        {/* Topic Section */}
-                        {isEditingTopic ? (
+                        {/* Tags Section */}
+                        {isEditingTags ? (
                             <div className="inline-edit-container">
-                                <div className="inline-edit-label">Edit Topic</div>
-                                <input
-                                    type="text"
-                                    value={editTopic}
-                                    onChange={(e) => setEditTopic(e.target.value)}
-                                    maxLength="50"
-                                    placeholder="Enter topic..."
-                                    style={{
-                                        width: '100%',
-                                        padding: '0.75rem',
-                                        border: '2px solid var(--accent-gold)',
-                                        borderRadius: '6px',
-                                        fontFamily: 'Crimson Pro, serif',
-                                        fontSize: '1rem',
-                                        marginBottom: '0.75rem'
-                                    }}
-                                    aria-label="Edit topic"
-                                />
-                                <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
-                                    Or select from presets:
+                                <div className="inline-edit-label">Edit Tags</div>
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                    <input
+                                        type="text"
+                                        value={editTags.join(', ')}
+                                        onChange={(e) => {
+                                            const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                                            setEditTags(tags);
+                                        }}
+                                        placeholder="Enter tags separated by commas"
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            border: '2px solid var(--accent-gold)',
+                                            borderRadius: '6px',
+                                            fontFamily: 'Crimson Pro, serif',
+                                            fontSize: '1rem',
+                                            marginBottom: '0.75rem'
+                                        }}
+                                        aria-label="Edit tags"
+                                    />
                                 </div>
-                                <select 
-                                    value={editTopic}
-                                    onChange={(e) => setEditTopic(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '0.75rem',
-                                        border: '2px solid rgba(196, 166, 97, 0.3)',
-                                        borderRadius: '6px',
-                                        fontFamily: 'Crimson Pro, serif',
-                                        fontSize: '1rem',
-                                        marginBottom: '0.75rem'
-                                    }}
-                                    aria-label="Select topic from presets"
-                                >
-                                    <option value="">Choose a preset topic...</option>
-                                    {TOPICS.map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
                                 <div className="edit-actions">
-                                    <button className="btn btn-primary" onClick={saveTopic} style={{ flex: 1 }} aria-label="Save topic">
-                                        Save Topic
+                                    <button className="btn btn-primary" onClick={saveTags} style={{ flex: 1 }} aria-label="Save tags">
+                                        Save Tags
                                     </button>
-                                    <button className="btn-secondary" onClick={cancelEditTopic} style={{ flex: 1 }} aria-label="Cancel editing topic">
+                                    <button className="btn-secondary" onClick={cancelEditTags} style={{ flex: 1 }} aria-label="Cancel editing tags">
                                         Cancel
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <div style={{marginBottom: '1.5rem'}}>
-                                <div 
-                                    className="entry-topic" 
-                                    style={{display: 'inline-block', cursor: 'pointer'}} 
-                                    onClick={startEditTopic}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            startEditTopic();
-                                        }
-                                    }}
-                                    aria-label="Click to edit topic"
-                                >
-                                    {modalEntry.topic}
-                                    <span style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginLeft: '0.5rem'}}>✏️</span>
-                                </div>
+                                {modalEntry.tags && modalEntry.tags.length > 0 ? (
+                                    <div className="entry-tags">
+                                        {modalEntry.tags.map((tag, i) => (
+                                            <span key={i} className="entry-tag-badge">{tag}</span>
+                                        ))}
+                                        <span 
+                                            style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginLeft: '0.5rem', cursor: 'pointer'}} 
+                                            onClick={startEditTags}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    startEditTags();
+                                                }
+                                            }}
+                                        >
+                                            ✏️
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div 
+                                        style={{display: 'inline-block', cursor: 'pointer', color: 'var(--soft-gray)'}} 
+                                        onClick={startEditTags}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                startEditTags();
+                                            }
+                                        }}
+                                    >
+                                        + Add tags
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1012,10 +810,10 @@ function App() {
                             </button>
                             <button 
                                 className="action-button" 
-                                onClick={startEditTopic}
-                                aria-label="Change topic"
+                                onClick={startEditTags}
+                                aria-label="Change tags"
                             >
-                                🏷️ Change Topic
+                                🏷️ Change Tags
                             </button>
                             <button 
                                 className="action-button" 
@@ -1023,6 +821,16 @@ function App() {
                                 aria-label="Change date"
                             >
                                 📅 Change Date
+                            </button>
+                            <button 
+                                className="action-button" 
+                                onClick={() => {
+                                    handleEditEntry(modalEntry);
+                                    setShowModal(false);
+                                }}
+                                aria-label="Edit full entry"
+                            >
+                                ✏️ Edit Entry
                             </button>
                             <button 
                                 className="action-button" 
@@ -1052,7 +860,7 @@ function App() {
                                     value={editStory}
                                     onChange={(e) => setEditStory(e.target.value)}
                                     rows="10"
-                                    placeholder="Write the full, detailed version of this experience... Include the context, what happened, what you learned, and why it matters."
+                                    placeholder="Write the full, detailed version of this experience..."
                                     style={{
                                         width: '100%',
                                         padding: '1rem',
@@ -1163,4 +971,3 @@ function App() {
 }
 
 export default App;
-

@@ -47,3 +47,32 @@ export const clearUser = () => {
     localStorage.removeItem('googleUser');
 };
 
+// Migration: Convert topic field to tags array
+export const migrateEntriesToTags = (entries) => {
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+    
+    return entries.map(entry => {
+        // If entry already has tags, return as-is
+        if (entry.tags && Array.isArray(entry.tags)) {
+            return entry;
+        }
+        
+        // If entry has topic but no tags, convert topic to tags array
+        if (entry.topic && !entry.tags) {
+            const migrated = { ...entry };
+            migrated.tags = [entry.topic];
+            delete migrated.topic;
+            return migrated;
+        }
+        
+        // If entry has neither topic nor tags, add empty tags array
+        if (!entry.tags) {
+            return { ...entry, tags: [] };
+        }
+        
+        return entry;
+    });
+};
+
