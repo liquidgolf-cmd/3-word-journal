@@ -135,7 +135,6 @@ export default function InputView({
     return (
         <div className="input-view">
             <div className="quick-entry-card">
-                <h2>{editingEntry ? 'Edit Entry' : 'New Entry'}</h2>
                 <form onSubmit={handleSubmit}>
                     <EntryForm
                         inputMode={inputMode}

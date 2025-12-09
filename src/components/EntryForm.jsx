@@ -19,9 +19,7 @@ export default function EntryForm({
     handleSubmit
 }) {
     return (
-        <div className="quick-entry-card">
-            <h2>New Entry</h2>
-            <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Entry Mode</label>
                     <div className="input-mode-toggle" role="tablist">
@@ -232,8 +230,7 @@ export default function EntryForm({
                 >
                     Save Entry
                 </button>
-            </form>
-        </div>
+        </form>
     );
 }
 

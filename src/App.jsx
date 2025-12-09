@@ -460,64 +460,65 @@ function App() {
 
     return (
         <div className="app-container">
-            <div className="auth-container">
-                <div className="user-info">
-                    <img src={user.picture} alt={user.name} className="user-avatar" />
-                    <span className="user-name">{user.name}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button 
-                            className="btn btn-secondary" 
-                            onClick={exportData}
-                            aria-label="Export journal data"
-                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-                        >
-                            📥 Export
-                        </button>
-                        <label 
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', cursor: 'pointer', margin: 0 }}
-                            aria-label="Import journal data"
-                        >
-                            📤 Import
-                            <input 
-                                type="file" 
-                                accept=".json" 
-                                onChange={importData}
-                                style={{ display: 'none' }}
-                                aria-label="Import journal data file"
-                            />
-                        </label>
-                        <button 
-                            className="btn btn-secondary" 
-                            onClick={handleSyncToSheets}
-                            disabled={isSyncing || entries.length === 0}
-                            aria-label="Sync to Google Sheets"
-                            style={{ 
-                                fontSize: '0.85rem', 
-                                padding: '0.5rem 1rem',
-                                opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
-                                cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            {isSyncing ? (
-                                <>⏳ Syncing...</>
-                            ) : (
-                                <>📊 Sync to Sheets</>
-                            )}
-                        </button>
-                        <button 
-                            className="btn-logout" 
-                            onClick={handleLogout}
-                            aria-label="Sign out"
-                        >
-                            Sign Out
-                        </button>
+            <header className="header">
+                <div className="header-top">
+                    <div className="header-title">
+                        <h1>3 Word Journal</h1>
+                        <p className="subtitle">Capture life's lessons in just three words</p>
+                    </div>
+                    <div className="auth-container">
+                        <div className="user-info">
+                            <img src={user.picture} alt={user.name} className="user-avatar" />
+                            <span className="user-name">{user.name}</span>
+                            <div className="header-actions">
+                                <button 
+                                    className="btn btn-secondary" 
+                                    onClick={exportData}
+                                    aria-label="Export journal data"
+                                >
+                                    📥 Export
+                                </button>
+                                <label 
+                                    className="btn btn-secondary"
+                                    style={{ cursor: 'pointer', margin: 0 }}
+                                    aria-label="Import journal data"
+                                >
+                                    📤 Import
+                                    <input 
+                                        type="file" 
+                                        accept=".json" 
+                                        onChange={importData}
+                                        style={{ display: 'none' }}
+                                        aria-label="Import journal data file"
+                                    />
+                                </label>
+                                <button 
+                                    className="btn btn-secondary" 
+                                    onClick={handleSyncToSheets}
+                                    disabled={isSyncing || entries.length === 0}
+                                    aria-label="Sync to Google Sheets"
+                                    style={{ 
+                                        opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
+                                        cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {isSyncing ? (
+                                        <>⏳ Syncing...</>
+                                    ) : (
+                                        <>📊 Sync to Sheets</>
+                                    )}
+                                </button>
+                                <button 
+                                    className="btn-logout" 
+                                    onClick={handleLogout}
+                                    aria-label="Sign out"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <header className="header">
-                <h1>3 Word Journal</h1>
-                <p className="subtitle">Capture life's lessons in just three words</p>
             </header>
 
             {/* Error and Success Messages */}
