@@ -222,14 +222,6 @@ export default function EntryForm({
                         Leave blank to use today's date
                     </div>
                 </div>
-
-                <button 
-                    type="submit" 
-                    className="btn btn-primary"
-                    aria-label="Save new journal entry"
-                >
-                    Save Entry
-                </button>
         </form>
     );
 }
