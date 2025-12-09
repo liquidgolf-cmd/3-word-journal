@@ -133,10 +133,18 @@ function App() {
         setError(null);
 
         try {
+            const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+            
+            if (!apiKey) {
+                throw new Error('Anthropic API key is not configured. Please set VITE_ANTHROPIC_API_KEY in your environment variables.');
+            }
+
             const response = await fetch("https://api.anthropic.com/v1/messages", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01"
                 },
                 body: JSON.stringify({
                     model: "claude-sonnet-4-20250514",
@@ -179,9 +187,22 @@ Respond with ONLY 3 words separated by commas, nothing else.`
             setWord3(words[2] || '');
         } catch (error) {
             console.error('Error generating words:', error);
-            setError(`AI word generation failed: ${error.message}. Switching to Manual Entry mode...`);
+            let errorMessage = error.message;
+            
+            // Provide more helpful error messages
+            if (errorMessage.includes('API key')) {
+                errorMessage = 'AI feature requires an API key. Please configure VITE_ANTHROPIC_API_KEY in your environment variables.';
+            } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
+                errorMessage = 'Invalid API key. Please check your Anthropic API key configuration.';
+            } else if (errorMessage.includes('429')) {
+                errorMessage = 'API rate limit exceeded. Please try again in a moment.';
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            }
+            
+            setError(`AI word generation failed: ${errorMessage}. Switching to Manual Entry mode...`);
             setInputMode('manual');
-            setTimeout(() => setError(null), 5000);
+            setTimeout(() => setError(null), 8000);
         } finally {
             setIsGenerating(false);
         }

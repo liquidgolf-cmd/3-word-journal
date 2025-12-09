@@ -74,18 +74,44 @@ If you want to use environment variables instead of hardcoding:
 
 ## Troubleshooting
 
+### "Error 400: origin_mismatch" (Most Common)
+**This error means your Vercel domain is not registered in Google Cloud Console.**
+
+**To Fix:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to **APIs & Services** → **Credentials**
+3. Click on your OAuth 2.0 Client ID (the one you created)
+4. Under **Authorized JavaScript origins**, click **+ ADD URI** and add:
+   - `https://3-word-journal-v1.vercel.app` (your production URL)
+   - `https://3-word-journal-v1-*.vercel.app` (for preview deployments - note: Google doesn't support wildcards, so you may need to add specific preview URLs)
+   - `http://localhost:3000` (for local development)
+   - `http://localhost:4173` (for Vite preview)
+   - If you have a custom domain, add that too: `https://yourdomain.com`
+5. Under **Authorized redirect URIs**, add the same URLs
+6. Click **SAVE**
+7. **Wait 5-10 minutes** for changes to propagate
+8. Try signing in again
+
+**Important Notes:**
+- Google doesn't support wildcard subdomains in OAuth origins
+- For preview deployments, you may need to add each preview URL individually, OR
+- Use a single production URL and test on that domain
+- Changes can take a few minutes to take effect
+
 ### "Invalid client" error
 - Make sure your Client ID is correct
 - Check that your domain is in the Authorized JavaScript origins
+- Verify the Client ID in your Vercel environment variables matches Google Cloud Console
 
 ### Sign-in button doesn't appear
 - Check browser console for errors
 - Make sure the Google Identity Services script is loading
-- Verify your Client ID is set correctly
+- Verify your Client ID is set correctly in environment variables
 
 ### Redirect URI mismatch
 - Make sure the exact URL (including http/https and port) is in Authorized redirect URIs
 - For Vercel, use: `https://your-project.vercel.app`
+- No trailing slashes in the URLs
 
 ## Security Notes
 
