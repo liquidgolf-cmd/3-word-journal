@@ -20,6 +20,53 @@ export default function EntryForm({
 }) {
     return (
         <form onSubmit={handleSubmit}>
+                {/* 1. Describe Your Experience */}
+                {inputMode === 'ai' ? (
+                    <div className="form-group">
+                        <label htmlFor="experience-text">Describe Your Experience</label>
+                        <textarea
+                            id="experience-text"
+                            placeholder="Tell me about what happened... I'll help you distill it into three words."
+                            value={experienceText}
+                            onChange={(e) => setExperienceText(e.target.value)}
+                            rows="4"
+                            aria-label="Describe your experience for AI word generation"
+                        />
+                    </div>
+                ) : (
+                    <div className="form-group">
+                        <label htmlFor="experience-summary">Describe Your Experience (Optional)</label>
+                        <textarea
+                            id="experience-summary"
+                            placeholder="Quick summary of what happened..."
+                            value={experienceText}
+                            onChange={(e) => setExperienceText(e.target.value)}
+                            rows="4"
+                            aria-label="Optional experience summary"
+                        />
+                        <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
+                            You can add the full detailed story later
+                        </div>
+                    </div>
+                )}
+
+                {/* 2. When Did This Happen? */}
+                <div className="form-group">
+                    <label htmlFor="experience-date">When Did This Happen?</label>
+                    <input
+                        id="experience-date"
+                        type="date"
+                        value={experienceDate}
+                        onChange={(e) => setExperienceDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                        aria-label="Date when the experience happened"
+                    />
+                    <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
+                        Leave blank to use today's date
+                    </div>
+                </div>
+
+                {/* 3. Entry Mode */}
                 <div className="form-group">
                     <label>Entry Mode</label>
                     <div className="input-mode-toggle" role="tablist">
@@ -66,20 +113,9 @@ export default function EntryForm({
                     )}
                 </div>
 
+                {/* 4. Three Words */}
                 {inputMode === 'ai' ? (
                     <>
-                        <div className="form-group">
-                            <label htmlFor="experience-text">Describe Your Experience</label>
-                            <textarea
-                                id="experience-text"
-                                placeholder="Tell me about what happened... I'll help you distill it into three words."
-                                value={experienceText}
-                                onChange={(e) => setExperienceText(e.target.value)}
-                                rows="4"
-                                aria-label="Describe your experience for AI word generation"
-                            />
-                        </div>
-
                         {suggestedWords.length > 0 && (
                             <div className="ai-suggestions-container">
                                 <div className="ai-suggestions-header">
@@ -159,69 +195,36 @@ export default function EntryForm({
                         </div>
                     </>
                 ) : (
-                    <>
-                        <div className="form-group">
-                            <label>Three Words</label>
-                            <div className="three-words-input">
-                                <input
-                                    type="text"
-                                    placeholder="Word 1"
-                                    value={word1}
-                                    onChange={(e) => setWord1(e.target.value)}
-                                    maxLength="20"
-                                    aria-label="First word"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Word 2"
-                                    value={word2}
-                                    onChange={(e) => setWord2(e.target.value)}
-                                    maxLength="20"
-                                    aria-label="Second word"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Word 3"
-                                    value={word3}
-                                    onChange={(e) => setWord3(e.target.value)}
-                                    maxLength="20"
-                                    aria-label="Third word"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="experience-summary">Describe Your Experience (Optional)</label>
-                            <textarea
-                                id="experience-summary"
-                                placeholder="Quick summary of what happened..."
-                                value={experienceText}
-                                onChange={(e) => setExperienceText(e.target.value)}
-                                rows="4"
-                                aria-label="Optional experience summary"
+                    <div className="form-group">
+                        <label>Three Words</label>
+                        <div className="three-words-input">
+                            <input
+                                type="text"
+                                placeholder="Word 1"
+                                value={word1}
+                                onChange={(e) => setWord1(e.target.value)}
+                                maxLength="20"
+                                aria-label="First word"
                             />
-                            <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                                You can add the full detailed story later
-                            </div>
+                            <input
+                                type="text"
+                                placeholder="Word 2"
+                                value={word2}
+                                onChange={(e) => setWord2(e.target.value)}
+                                maxLength="20"
+                                aria-label="Second word"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Word 3"
+                                value={word3}
+                                onChange={(e) => setWord3(e.target.value)}
+                                maxLength="20"
+                                aria-label="Third word"
+                            />
                         </div>
-                    </>
-                )}
-
-
-                <div className="form-group">
-                    <label htmlFor="experience-date">When Did This Happen?</label>
-                    <input
-                        id="experience-date"
-                        type="date"
-                        value={experienceDate}
-                        onChange={(e) => setExperienceDate(e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
-                        aria-label="Date when the experience happened"
-                    />
-                    <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                        Leave blank to use today's date
                     </div>
-                </div>
+                )}
         </form>
     );
 }
