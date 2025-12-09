@@ -1135,6 +1135,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-align: center;
 }
 
 .btn-secondary:hover {
@@ -1339,6 +1340,7 @@ body {
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
     white-space: nowrap;
+    text-align: center;
 }
 
 .user-avatar {
@@ -1366,6 +1368,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-align: center;
 }
 
 .btn-logout:hover {
