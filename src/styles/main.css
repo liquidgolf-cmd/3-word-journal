@@ -469,12 +469,79 @@ body {
     margin-bottom: 2rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid var(--accent-gold);
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .section-header h2 {
     font-family: 'Libre Baskerville', serif;
     font-size: 1.8rem;
     color: var(--dark-brown);
+    flex: 1;
+    min-width: 200px;
+}
+
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.stats-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--accent-gold);
+    background: var(--cream);
+    color: var(--warm-brown);
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.stats-toggle:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(44, 24, 16, 0.1);
+}
+
+.stats-toggle.active {
+    background: var(--accent-gold);
+    color: white;
+    border-color: var(--accent-gold);
+}
+
+.stats-toggle-icon {
+    font-size: 1.1rem;
+}
+
+.stats-toggle-text {
+    font-size: 0.85rem;
+}
+
+.stats-bar-container {
+    margin-bottom: 2rem;
+    animation: slideDown 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
+    }
 }
 
 .view-toggle {
@@ -1112,7 +1179,6 @@ body {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
-    margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -1137,6 +1203,41 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-family: 'Montserrat', sans-serif;
+}
+
+/* Responsive Stats Bar */
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .header-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stats-toggle-text {
+        display: none;
+    }
+    
+    .stats-toggle {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-bar {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header h2 {
+        font-size: 1.5rem;
+    }
 }
 
 /* Modal */

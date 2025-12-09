@@ -6,7 +6,7 @@ describe('StatsBar', () => {
     it('should render all stat cards', () => {
         const stats = {
             total: 10,
-            topics: 5,
+            tags: 5,
             thisMonth: 3,
             withStories: 2
         };
@@ -19,7 +19,7 @@ describe('StatsBar', () => {
         expect(screen.getByText('2')).toBeInTheDocument();
         
         expect(screen.getByText('Total Entries')).toBeInTheDocument();
-        expect(screen.getByText('Topics')).toBeInTheDocument();
+        expect(screen.getByText('Tags')).toBeInTheDocument();
         expect(screen.getByText('This Month')).toBeInTheDocument();
         expect(screen.getByText('Full Stories')).toBeInTheDocument();
     });
@@ -27,7 +27,7 @@ describe('StatsBar', () => {
     it('should have correct aria-label', () => {
         const stats = {
             total: 0,
-            topics: 0,
+            tags: 0,
             thisMonth: 0,
             withStories: 0
         };
@@ -40,7 +40,7 @@ describe('StatsBar', () => {
     it('should display zero values correctly', () => {
         const stats = {
             total: 0,
-            topics: 0,
+            tags: 0,
             thisMonth: 0,
             withStories: 0
         };

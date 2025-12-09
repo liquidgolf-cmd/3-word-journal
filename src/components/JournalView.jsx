@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import EntryCard from './EntryCard';
+import StatsBar from './StatsBar';
 
 export default function JournalView({
     entries,
@@ -12,6 +13,7 @@ export default function JournalView({
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
     const [specificYear, setSpecificYear] = useState('');
+    const [showStats, setShowStats] = useState(false);
 
     // Get all unique tags from entries
     const allTags = useMemo(() => {
@@ -107,11 +109,52 @@ export default function JournalView({
 
     const hasActiveFilters = searchTerm || selectedTags.length > 0 || (dateFilter !== 'all' && !(dateFilter === 'specificYear' && !specificYear.trim()));
 
+    // Calculate statistics
+    const stats = useMemo(() => {
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // Get unique tags
+        const allTags = new Set();
+        entries.forEach(entry => {
+            if (entry.tags && Array.isArray(entry.tags)) {
+                entry.tags.forEach(tag => {
+                    if (tag && tag.trim()) {
+                        allTags.add(tag.trim());
+                    }
+                });
+            }
+        });
+        
+        return {
+            total: entries.length,
+            tags: allTags.size,
+            thisMonth: entries.filter(entry => {
+                const entryDate = new Date(entry.experienceDate || entry.date);
+                return entryDate >= thisMonthStart;
+            }).length,
+            withStories: entries.filter(entry => 
+                entry.fullStory && entry.fullStory.trim()
+            ).length
+        };
+    }, [entries]);
+
     return (
         <div className="journal-view">
             <div className="section-header">
                 <h2>Your Journal</h2>
-                <div className="view-toggle" role="tablist">
+                <div className="header-controls">
+                    <button
+                        type="button"
+                        className={`stats-toggle ${showStats ? 'active' : ''}`}
+                        onClick={() => setShowStats(!showStats)}
+                        aria-label={showStats ? 'Hide statistics' : 'Show statistics'}
+                        aria-expanded={showStats}
+                    >
+                        <span className="stats-toggle-icon">📊</span>
+                        <span className="stats-toggle-text">{showStats ? 'Hide Stats' : 'Show Stats'}</span>
+                    </button>
+                    <div className="view-toggle" role="tablist">
                     <button 
                         className={viewMode === 'grid' ? 'active' : ''}
                         onClick={() => setViewMode('grid')}
@@ -130,8 +173,16 @@ export default function JournalView({
                     >
                         List
                     </button>
+                    </div>
                 </div>
             </div>
+
+            {/* Stats Bar */}
+            {showStats && (
+                <div className="stats-bar-container">
+                    <StatsBar stats={stats} />
+                </div>
+            )}
 
             {/* Filters Row */}
             <div className="filters-row">
