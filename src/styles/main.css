@@ -41,12 +41,14 @@ body {
 
 @media (max-width: 768px) {
     .user-info {
-        flex-direction: column;
+        flex-wrap: wrap;
+        white-space: normal;
         width: 100%;
         text-align: center;
     }
     
     .header-actions {
+        flex-wrap: wrap;
         justify-content: center;
         width: 100%;
     }
@@ -1238,15 +1240,16 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(44, 24, 16, 0.1);
     border: 1px solid rgba(196, 166, 97, 0.2);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    white-space: nowrap;
 }
 
 .header-actions {
     display: flex;
     gap: 0.5rem;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .header-actions .btn,
