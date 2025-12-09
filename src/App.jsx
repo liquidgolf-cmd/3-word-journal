@@ -3,7 +3,6 @@ import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, migrat
 import { GOOGLE_CLIENT_ID, initializeGoogleSignIn, renderGoogleButton, decodeJWT, handleLogout as authLogout } from './utils/auth';
 import { initGapi, requestAuth, syncToSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
 import MessageBanner from './components/MessageBanner';
-import StatsBar from './components/StatsBar';
 import TabNavigation from './components/TabNavigation';
 import InputView from './components/InputView';
 import JournalView from './components/JournalView';
@@ -461,63 +460,9 @@ function App() {
     return (
         <div className="app-container">
             <header className="header">
-                <div className="header-top">
-                    <div className="header-title">
-                        <h1>3 Word Journal</h1>
-                        <p className="subtitle">Capture life's lessons in just three words</p>
-                    </div>
-                    <div className="auth-container">
-                        <div className="user-info">
-                            <img src={user.picture} alt={user.name} className="user-avatar" />
-                            <span className="user-name">{user.name}</span>
-                            <div className="header-actions">
-                                <button 
-                                    className="btn btn-secondary" 
-                                    onClick={exportData}
-                                    aria-label="Export journal data"
-                                >
-                                    📥 Export
-                                </button>
-                                <label 
-                                    className="btn btn-secondary"
-                                    style={{ cursor: 'pointer', margin: 0 }}
-                                    aria-label="Import journal data"
-                                >
-                                    📤 Import
-                                    <input 
-                                        type="file" 
-                                        accept=".json" 
-                                        onChange={importData}
-                                        style={{ display: 'none' }}
-                                        aria-label="Import journal data file"
-                                    />
-                                </label>
-                                <button 
-                                    className="btn btn-secondary" 
-                                    onClick={handleSyncToSheets}
-                                    disabled={isSyncing || entries.length === 0}
-                                    aria-label="Sync to Google Sheets"
-                                    style={{ 
-                                        opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
-                                        cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
-                                    }}
-                                >
-                                    {isSyncing ? (
-                                        <>⏳ Syncing...</>
-                                    ) : (
-                                        <>📊 Sync to Sheets</>
-                                    )}
-                                </button>
-                                <button 
-                                    className="btn-logout" 
-                                    onClick={handleLogout}
-                                    aria-label="Sign out"
-                                >
-                                    Sign Out
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="header-title">
+                    <h1>3 Word Journal</h1>
+                    <p className="subtitle">Capture life's lessons in just three words</p>
                 </div>
             </header>
 
@@ -533,7 +478,59 @@ function App() {
                 onDismiss={() => setSuccessMessage(null)} 
             />
 
-            <StatsBar stats={stats} />
+            {/* Actions Bar */}
+            <div className="actions-bar">
+                <div className="user-info">
+                    <img src={user.picture} alt={user.name} className="user-avatar" />
+                    <span className="user-name">{user.name}</span>
+                    <div className="header-actions">
+                        <button 
+                            className="btn btn-secondary" 
+                            onClick={exportData}
+                            aria-label="Export journal data"
+                        >
+                            📥 Export
+                        </button>
+                        <label 
+                            className="btn btn-secondary"
+                            style={{ cursor: 'pointer', margin: 0 }}
+                            aria-label="Import journal data"
+                        >
+                            📤 Import
+                            <input 
+                                type="file" 
+                                accept=".json" 
+                                onChange={importData}
+                                style={{ display: 'none' }}
+                                aria-label="Import journal data file"
+                            />
+                        </label>
+                        <button 
+                            className="btn btn-secondary" 
+                            onClick={handleSyncToSheets}
+                            disabled={isSyncing || entries.length === 0}
+                            aria-label="Sync to Google Sheets"
+                            style={{ 
+                                opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
+                                cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {isSyncing ? (
+                                <>⏳ Syncing...</>
+                            ) : (
+                                <>📊 Sync to Sheets</>
+                            )}
+                        </button>
+                        <button 
+                            className="btn-logout" 
+                            onClick={handleLogout}
+                            aria-label="Sign out"
+                        >
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <TabNavigation currentView={currentView} onViewChange={setCurrentView} />
 
