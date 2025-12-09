@@ -73,35 +73,53 @@ export const requestAuth = async (clientId) => {
     return new Promise((resolve, reject) => {
         try {
             let tokenReceived = false;
+            let timeoutId = null;
             
             const tokenClient = window.google.accounts.oauth2.initTokenClient({
                 client_id: clientId,
                 scope: SCOPES,
                 callback: (tokenResponse) => {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    
                     if (tokenResponse && tokenResponse.access_token) {
                         window.gapi.client.setToken(tokenResponse);
                         tokenReceived = true;
                         resolve();
                     } else if (tokenResponse && tokenResponse.error) {
-                        reject(new Error(`OAuth error: ${tokenResponse.error}`));
+                        let errorMsg = `OAuth error: ${tokenResponse.error}`;
+                        if (tokenResponse.error === 'popup_closed_by_user') {
+                            errorMsg = 'Authorization popup was closed. Please try again and complete the authorization.';
+                        } else if (tokenResponse.error === 'popup_blocked') {
+                            errorMsg = 'Popup was blocked. Please allow popups for this site and try again.';
+                        }
+                        reject(new Error(errorMsg));
                     } else {
                         reject(new Error('Failed to get access token - no token in response'));
                     }
                 },
             });
 
-            // Request new token
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            // Request new token - use 'select_account' on mobile for better UX
+            // Mobile browsers handle this better than 'consent'
+            const promptType = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 'select_account' : 'consent';
+            tokenClient.requestAccessToken({ prompt: promptType });
             
-            // Timeout after 30 seconds
-            setTimeout(() => {
+            // Timeout after 60 seconds (longer for mobile)
+            timeoutId = setTimeout(() => {
                 if (!tokenReceived) {
-                    reject(new Error('Authorization request timed out. Please try again.'));
+                    reject(new Error('Authorization request timed out. Please try again and ensure popups are allowed.'));
                 }
-            }, 30000);
+            }, 60000);
         } catch (error) {
             console.error('Error requesting auth:', error);
-            reject(error);
+            let errorMsg = error.message || 'Failed to request authorization';
+            if (errorMsg.includes('popup') || errorMsg.includes('blocked')) {
+                errorMsg = 'Popup blocked. Please allow popups for this site in your browser settings and try again.';
+            }
+            reject(new Error(errorMsg));
         }
     });
 };

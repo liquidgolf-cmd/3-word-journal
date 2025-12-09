@@ -354,9 +354,17 @@ function App() {
 
             if (!isAuthorized()) {
                 console.log('Requesting Google Sheets authorization...');
-                await requestAuth(GOOGLE_CLIENT_ID);
-                setSheetsAuthorized(true);
-                console.log('Authorization granted');
+                try {
+                    await requestAuth(GOOGLE_CLIENT_ID);
+                    setSheetsAuthorized(true);
+                    console.log('Authorization granted');
+                } catch (authError) {
+                    // Re-throw with more context for mobile
+                    if (authError.message && authError.message.includes('popup')) {
+                        throw new Error('Authorization popup was blocked or closed. On mobile, please ensure popups are allowed and try again.');
+                    }
+                    throw authError;
+                }
             } else {
                 console.log('Already authorized for Google Sheets');
             }
@@ -377,10 +385,14 @@ function App() {
                 errorMessage = 'Permission denied. Please grant access to Google Sheets when prompted.';
             } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
                 errorMessage = 'Network error. Please check your internet connection.';
+            } else if (errorMessage.includes('popup') || errorMessage.includes('blocked')) {
+                errorMessage = 'Popup blocked. On mobile, please allow popups for this site in your browser settings, then try again.';
+            } else if (errorMessage.includes('timeout')) {
+                errorMessage = 'Request timed out. Please check your connection and try again.';
             }
             
             setError(`Sync failed: ${errorMessage}`);
-            setTimeout(() => setError(null), 8000);
+            setTimeout(() => setError(null), 10000);
         } finally {
             setIsSyncing(false);
         }
