@@ -58,12 +58,16 @@ function App() {
             if (GOOGLE_CLIENT_ID) {
                 initializeGoogleSignIn(handleCredentialResponse);
                 
-                // Initialize Google Sheets API
-                initGapi(GOOGLE_CLIENT_ID).then(() => {
-                    setSheetsAuthorized(isAuthorized());
-                }).catch(err => {
-                    console.log('Sheets API not initialized yet:', err);
-                });
+                // Initialize Google Sheets API (only if gapi is available)
+                // This will fail silently if the library hasn't loaded yet
+                if (typeof window !== 'undefined' && window.gapi) {
+                    initGapi(GOOGLE_CLIENT_ID).then(() => {
+                        setSheetsAuthorized(isAuthorized());
+                    }).catch(err => {
+                        // Silently fail - will retry when user clicks sync button
+                        console.log('Sheets API not initialized yet (will initialize on first sync):', err.message);
+                    });
+                }
             }
         };
 

@@ -5,20 +5,21 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 // Wait for gapi to load
 const waitForGapi = () => {
     return new Promise((resolve, reject) => {
-        if (typeof window !== 'undefined' && window.gapi) {
+        if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
             resolve();
             return;
         }
 
         let attempts = 0;
+        const maxAttempts = 100; // 10 seconds total
         const checkGapi = setInterval(() => {
             attempts++;
-            if (typeof window !== 'undefined' && window.gapi) {
+            if (typeof window !== 'undefined' && window.gapi && window.gapi.load) {
                 clearInterval(checkGapi);
                 resolve();
-            } else if (attempts > 50) {
+            } else if (attempts >= maxAttempts) {
                 clearInterval(checkGapi);
-                reject(new Error('Google API client library failed to load'));
+                reject(new Error('Google API client library failed to load after 10 seconds. Please refresh the page.'));
             }
         }, 100);
     });
@@ -34,7 +35,10 @@ export const initGapi = async (clientId) => {
             window.gapi.load('client', {
                 callback: resolve,
                 onerror: reject,
-                timeout: 10000
+                timeout: 10000,
+                ontimeout: () => {
+                    reject(new Error('Google API client library load timed out'));
+                }
             });
         });
     }
