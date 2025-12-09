@@ -398,9 +398,19 @@ body {
 }
 
 /* Search Bar */
+/* Filters Row */
+.filters-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
 .search-bar {
     position: relative;
-    margin-bottom: 1.5rem;
+    flex: 1;
+    min-width: 200px;
 }
 
 .search-bar input {
@@ -666,7 +676,8 @@ body {
 
 /* Tag Filter */
 .tag-filter-section {
-    margin-bottom: 1.5rem;
+    flex: 1;
+    min-width: 200px;
 }
 
 .tag-filter-header {
@@ -719,7 +730,8 @@ body {
 
 /* Date Filter */
 .date-filter-section {
-    margin-bottom: 1.5rem;
+    flex: 0 0 auto;
+    min-width: 150px;
 }
 
 .date-filter-section label {
@@ -732,7 +744,6 @@ body {
 
 .date-filter-section select {
     width: 100%;
-    max-width: 200px;
     padding: 0.75rem;
     border: 2px solid rgba(196, 166, 97, 0.3);
     border-radius: 8px;
@@ -740,6 +751,19 @@ body {
     font-size: 1rem;
     background: var(--cream);
     color: var(--dark-brown);
+}
+
+@media (max-width: 768px) {
+    .filters-row {
+        flex-direction: column;
+    }
+    
+    .search-bar,
+    .tag-filter-section,
+    .date-filter-section {
+        width: 100%;
+        min-width: auto;
+    }
 }
 
 /* Active Filters */

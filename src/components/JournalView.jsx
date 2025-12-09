@@ -115,74 +115,77 @@ export default function JournalView({
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="search-bar">
-                <input
-                    type="text"
-                    placeholder="Search your journal..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    aria-label="Search journal entries"
-                />
-                {searchTerm && (
-                    <button
-                        type="button"
-                        className="search-clear"
-                        onClick={() => setSearchTerm('')}
-                        aria-label="Clear search"
-                    >
-                        ×
-                    </button>
-                )}
-            </div>
-
-            {/* Tag Filter */}
-            {allTags.length > 0 && (
-                <div className="tag-filter-section">
-                    <div className="tag-filter-header">
-                        <label>Filter by Tags:</label>
-                        {selectedTags.length > 0 && (
-                            <button
-                                type="button"
-                                className="clear-tags-btn"
-                                onClick={() => setSelectedTags([])}
-                                aria-label="Clear tag filters"
-                            >
-                                Clear ({selectedTags.length})
-                            </button>
-                        )}
-                    </div>
-                    <div className="tag-filter" role="group" aria-label="Filter by tags">
-                        {allTags.map(tag => (
-                            <button
-                                key={tag}
-                                className={`tag-filter-button ${selectedTags.includes(tag) ? 'active' : ''}`}
-                                onClick={() => toggleTag(tag)}
-                                aria-pressed={selectedTags.includes(tag)}
-                                aria-label={`Filter by ${tag} tag`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
+            {/* Filters Row */}
+            <div className="filters-row">
+                {/* Search Bar */}
+                <div className="search-bar">
+                    <input
+                        type="text"
+                        placeholder="Search your journal..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        aria-label="Search journal entries"
+                    />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            className="search-clear"
+                            onClick={() => setSearchTerm('')}
+                            aria-label="Clear search"
+                        >
+                            ×
+                        </button>
+                    )}
                 </div>
-            )}
 
-            {/* Date Filter */}
-            <div className="date-filter-section">
-                <label htmlFor="date-filter">Filter by Date:</label>
-                <select
-                    id="date-filter"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                    aria-label="Filter entries by date"
-                >
-                    <option value="all">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="thisWeek">This Week</option>
-                    <option value="thisMonth">This Month</option>
-                    <option value="thisYear">This Year</option>
-                </select>
+                {/* Tag Filter */}
+                {allTags.length > 0 && (
+                    <div className="tag-filter-section">
+                        <div className="tag-filter-header">
+                            <label>Tags:</label>
+                            {selectedTags.length > 0 && (
+                                <button
+                                    type="button"
+                                    className="clear-tags-btn"
+                                    onClick={() => setSelectedTags([])}
+                                    aria-label="Clear tag filters"
+                                >
+                                    Clear ({selectedTags.length})
+                                </button>
+                            )}
+                        </div>
+                        <div className="tag-filter" role="group" aria-label="Filter by tags">
+                            {allTags.map(tag => (
+                                <button
+                                    key={tag}
+                                    className={`tag-filter-button ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                    onClick={() => toggleTag(tag)}
+                                    aria-pressed={selectedTags.includes(tag)}
+                                    aria-label={`Filter by ${tag} tag`}
+                                >
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Date Filter */}
+                <div className="date-filter-section">
+                    <label htmlFor="date-filter">Date:</label>
+                    <select
+                        id="date-filter"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                        aria-label="Filter entries by date"
+                    >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="thisWeek">This Week</option>
+                        <option value="thisMonth">This Month</option>
+                        <option value="thisYear">This Year</option>
+                    </select>
+                </div>
             </div>
 
             {/* Active Filters Summary */}
