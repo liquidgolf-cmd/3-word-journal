@@ -13,15 +13,18 @@ The "AI Suggested" feature uses Anthropic's Claude API to generate three-word su
 
 ## Step 2: Add API Key to Environment Variables
 
+**Important:** We use a serverless function to avoid CORS issues, so the API key is stored server-side (not exposed to the browser).
+
 ### For Local Development:
 
 1. Create a `.env` file in the root of your project (if it doesn't exist)
 2. Add this line:
    ```
-   VITE_ANTHROPIC_API_KEY=your-api-key-here
+   ANTHROPIC_API_KEY=your-api-key-here
    ```
 3. Replace `your-api-key-here` with your actual API key
 4. **Important:** Make sure `.env` is in your `.gitignore` file (it should be already)
+5. Restart your dev server
 
 ### For Vercel Deployment:
 
@@ -29,11 +32,13 @@ The "AI Suggested" feature uses Anthropic's Claude API to generate three-word su
 2. Navigate to **Settings** → **Environment Variables**
 3. Click **Add New**
 4. Add:
-   - **Name:** `VITE_ANTHROPIC_API_KEY`
+   - **Name:** `ANTHROPIC_API_KEY` (NOT VITE_ANTHROPIC_API_KEY)
    - **Value:** Your Anthropic API key
    - **Environment:** Production, Preview, and Development (select all)
 5. Click **Save**
 6. **Redeploy** your application for the changes to take effect
+
+**Note:** The API key is now stored securely on the server and never exposed to the browser.
 
 ## Step 3: Verify It Works
 

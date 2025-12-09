@@ -133,44 +133,18 @@ function App() {
         setError(null);
 
         try {
-            const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-            
             console.log('Starting AI word generation...');
-            console.log('API Key configured:', !!apiKey);
             console.log('Experience text length:', experienceText.length);
-            
-            if (!apiKey) {
-                const errorMsg = 'Anthropic API key is not configured. Please set VITE_ANTHROPIC_API_KEY in your environment variables.';
-                console.error(errorMsg);
-                throw new Error(errorMsg);
-            }
 
-            const requestBody = {
-                model: "claude-sonnet-4-20250514",
-                max_tokens: 1000,
-                messages: [{
-                    role: "user",
-                    content: `Based on this experience, suggest exactly 3 words that capture its essence. Follow these rules from "The 3 Word Journal":
-- Use specific, concrete words (not generalities)
-- Include a person, place, or thing if possible
-- Make the words uniquely identify this experience
-- Words should be memorable and evocative
-
-Experience: "${experienceText}"
-
-Respond with ONLY 3 words separated by commas, nothing else.`
-                }],
-            };
-
-            console.log('Making API request to Anthropic...');
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
+            console.log('Making API request to our proxy endpoint...');
+            const response = await fetch("/api/generate-words", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-api-key": apiKey,
-                    "anthropic-version": "2023-06-01"
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({
+                    experienceText: experienceText
+                })
             });
 
             console.log('Response status:', response.status, response.statusText);
@@ -185,26 +159,19 @@ Respond with ONLY 3 words separated by commas, nothing else.`
                     console.error('API Error Text:', errorText);
                     throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
                 }
-                throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || JSON.stringify(errorData)}`);
+                throw new Error(errorData.error || `API request failed: ${response.status}`);
             }
 
             const data = await response.json();
             console.log('API Response:', data);
             
-            if (!data.content || !data.content[0] || !data.content[0].text) {
+            if (!data.words || !Array.isArray(data.words) || data.words.length < 3) {
                 console.error('Unexpected response format:', data);
                 throw new Error('Unexpected API response format. Check console for details.');
             }
             
-            const text = data.content[0].text.trim();
-            console.log('AI Response text:', text);
-            
-            const words = text.split(',').map(w => w.trim()).filter(w => w.length > 0).slice(0, 3);
+            const words = data.words;
             console.log('Parsed words:', words);
-            
-            if (words.length < 3) {
-                throw new Error(`AI returned only ${words.length} word(s). Response: "${text}". Try rephrasing your experience.`);
-            }
             
             console.log('Setting words:', words);
             setSuggestedWords(words);
@@ -218,8 +185,8 @@ Respond with ONLY 3 words separated by commas, nothing else.`
             let errorMessage = error.message || 'Unknown error occurred';
             
             // Provide more helpful error messages
-            if (errorMessage.includes('API key') || errorMessage.includes('VITE_ANTHROPIC_API_KEY')) {
-                errorMessage = 'AI feature requires an API key. Please configure VITE_ANTHROPIC_API_KEY in your environment variables. See ANTHROPIC_API_SETUP.md for instructions.';
+            if (errorMessage.includes('API key') || errorMessage.includes('ANTHROPIC_API_KEY')) {
+                errorMessage = 'AI feature requires an API key. Please configure ANTHROPIC_API_KEY in your Vercel environment variables. See ANTHROPIC_API_SETUP.md for instructions.';
             } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
                 errorMessage = 'Invalid API key. Please check your Anthropic API key configuration.';
             } else if (errorMessage.includes('429')) {
