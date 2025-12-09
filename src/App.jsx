@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TOPICS } from './utils/constants';
 import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, getUserStorageKey } from './utils/storage';
 import { GOOGLE_CLIENT_ID, initializeGoogleSignIn, renderGoogleButton, decodeJWT, handleLogout as authLogout } from './utils/auth';
+import { initGapi, requestAuth, syncToSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
 import MessageBanner from './components/MessageBanner';
 import StatsBar from './components/StatsBar';
 import EntryForm from './components/EntryForm';
@@ -40,8 +41,10 @@ function App() {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [sheetsAuthorized, setSheetsAuthorized] = useState(false);
 
-    // Initialize Google Sign-In
+    // Initialize Google Sign-In and Sheets API
     useEffect(() => {
         const savedUser = loadUser();
         if (savedUser && savedUser.sub && savedUser.email) {
@@ -54,6 +57,13 @@ function App() {
         const initGoogle = () => {
             if (GOOGLE_CLIENT_ID) {
                 initializeGoogleSignIn(handleCredentialResponse);
+                
+                // Initialize Google Sheets API
+                initGapi(GOOGLE_CLIENT_ID).then(() => {
+                    setSheetsAuthorized(isAuthorized());
+                }).catch(err => {
+                    console.log('Sheets API not initialized yet:', err);
+                });
             }
         };
 
@@ -393,6 +403,59 @@ function App() {
         setTimeout(() => setSuccessMessage(null), 3000);
     };
 
+    // Sync to Google Sheets
+    const handleSyncToSheets = async () => {
+        if (entries.length === 0) {
+            setError('No entries to sync. Create some entries first!');
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        setIsSyncing(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            // Initialize gapi if not already done
+            if (!window.gapi || !window.gapi.client) {
+                await initGapi(GOOGLE_CLIENT_ID);
+            }
+
+            // Check if already authorized
+            if (!isAuthorized()) {
+                // Request authorization
+                await requestAuth(GOOGLE_CLIENT_ID);
+                setSheetsAuthorized(true);
+            }
+
+            // Get or create spreadsheet
+            const spreadsheetId = getStoredSpreadsheetId();
+            
+            // Sync entries
+            const result = await syncToSheets(entries, spreadsheetId);
+
+            setSuccessMessage(
+                `Successfully synced ${result.entryCount} entries to Google Sheets! ` +
+                `View your spreadsheet: ${result.url}`
+            );
+            setTimeout(() => setSuccessMessage(null), 8000);
+        } catch (error) {
+            console.error('Error syncing to Sheets:', error);
+            let errorMessage = error.message || 'Failed to sync to Google Sheets';
+            
+            if (errorMessage.includes('access_denied') || errorMessage.includes('permission')) {
+                errorMessage = 'Permission denied. Please grant access to Google Sheets when prompted.';
+            } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+                errorMessage = 'Network error. Please check your internet connection.';
+            }
+            
+            setError(`Sync failed: ${errorMessage}`);
+            setTimeout(() => setError(null), 8000);
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const importData = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -472,7 +535,7 @@ function App() {
                 <div className="user-info">
                     <img src={user.picture} alt={user.name} className="user-avatar" />
                     <span className="user-name">{user.name}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <button 
                             className="btn btn-secondary" 
                             onClick={exportData}
@@ -495,6 +558,24 @@ function App() {
                                 aria-label="Import journal data file"
                             />
                         </label>
+                        <button 
+                            className="btn btn-secondary" 
+                            onClick={handleSyncToSheets}
+                            disabled={isSyncing || entries.length === 0}
+                            aria-label="Sync to Google Sheets"
+                            style={{ 
+                                fontSize: '0.85rem', 
+                                padding: '0.5rem 1rem',
+                                opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
+                                cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            {isSyncing ? (
+                                <>⏳ Syncing...</>
+                            ) : (
+                                <>📊 Sync to Sheets</>
+                            )}
+                        </button>
                         <button 
                             className="btn-logout" 
                             onClick={handleLogout}

@@ -8,11 +8,13 @@
 4. Enter project name: "3 Word Journal" (or any name you prefer)
 5. Click "Create"
 
-## Step 2: Enable Google Identity Services API
+## Step 2: Enable Required APIs
 
 1. In the Google Cloud Console, go to **APIs & Services** → **Library**
-2. Search for "Google Identity Services API" or "Google+ API"
-3. Click on it and click **Enable**
+2. Enable these APIs:
+   - **Google Identity Services API** (for sign-in)
+   - **Google Sheets API** (for syncing entries to Sheets - optional but recommended)
+3. Search for each, click on it, and click **Enable**
 
 ## Step 3: Create OAuth 2.0 Credentials
 
@@ -25,7 +27,12 @@
      - User support email: Your email
      - Developer contact: Your email
    - Click **Save and Continue**
-   - Skip scopes (click **Save and Continue**)
+   - **Scopes**: If you want to use Google Sheets sync, add this scope:
+     - Click **Add or Remove Scopes**
+     - Search for: `https://www.googleapis.com/auth/spreadsheets`
+     - Check the box and click **Update**
+     - Click **Save and Continue**
+     - (If not using Sheets sync, you can skip scopes)
    - Add test users if needed (click **Save and Continue**)
    - Click **Back to Dashboard**
 
