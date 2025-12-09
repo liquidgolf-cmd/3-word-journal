@@ -62,6 +62,17 @@ body {
         text-align: center;
     }
     
+    .sync-indicator {
+        width: 100%;
+        justify-content: center;
+        margin: 0.5rem 0;
+        order: 3; /* Show after user name */
+    }
+    
+    .sync-status {
+        font-size: 0.75rem;
+    }
+    
     .header-actions {
         flex-wrap: wrap;
         justify-content: center;
@@ -97,6 +108,17 @@ body {
     
     .user-avatar {
         order: 1;
+    }
+    
+    .sync-indicator {
+        width: 100%;
+        justify-content: center;
+        margin: 0.5rem 0;
+        order: 3;
+    }
+    
+    .sync-status {
+        font-size: 0.7rem;
     }
     
     .header-actions {
@@ -1451,6 +1473,30 @@ body {
     font-size: 0.9rem;
     color: var(--dark-brown);
     font-weight: 500;
+}
+
+/* Sync Indicator */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    margin: 0 0.5rem;
+}
+
+.sync-status {
+    font-size: 0.85rem;
+    color: var(--soft-gray);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sync-status.syncing {
+    color: var(--accent-color, var(--accent-gold));
+    font-weight: 500;
+}
+
+.sync-status.synced {
+    color: #28a745;
 }
 
 .btn-logout {

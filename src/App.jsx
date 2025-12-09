@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, migrateEntriesToTags } from './utils/storage';
+import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, migrateEntriesToTags, saveSyncStatus, loadSyncStatus } from './utils/storage';
 import { GOOGLE_CLIENT_ID, initializeGoogleSignIn, renderGoogleButton, decodeJWT, handleLogout as authLogout } from './utils/auth';
-import { initGapi, requestAuth, syncToSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
+import { initGapi, requestAuth, syncToSheets, syncFromSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
 import MessageBanner from './components/MessageBanner';
 import TabNavigation from './components/TabNavigation';
 import InputView from './components/InputView';
 import JournalView from './components/JournalView';
+import SyncIndicator from './components/SyncIndicator';
 
 function App() {
     const [user, setUser] = useState(null);
@@ -31,7 +32,9 @@ function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isPulling, setIsPulling] = useState(false);
     const [sheetsAuthorized, setSheetsAuthorized] = useState(false);
+    const [syncStatus, setSyncStatus] = useState(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
     // Initialize Google Sign-In and Sheets API, and migrate entries
@@ -50,6 +53,77 @@ function App() {
             }
             
             setEntries(userEntries);
+            
+            // Load sync status
+            const savedSyncStatus = loadSyncStatus();
+            if (savedSyncStatus) {
+                setSyncStatus(savedSyncStatus);
+            }
+            
+            // Auto-pull from Sheets if authorized and spreadsheet exists
+            const autoPullFromSheets = async () => {
+                try {
+                    if (typeof window !== 'undefined' && window.gapi && window.gapi.client) {
+                        await initGapi(GOOGLE_CLIENT_ID);
+                        const authorized = isAuthorized();
+                        setSheetsAuthorized(authorized);
+                        
+                        if (authorized) {
+                            const spreadsheetId = getStoredSpreadsheetId();
+                            if (spreadsheetId) {
+                                setIsPulling(true);
+                                const sheetsEntries = await syncFromSheets(spreadsheetId);
+                                
+                                if (sheetsEntries.length > 0) {
+                                    // Merge: Sheets data takes precedence (newer)
+                                    // Simple merge: replace entries with same ID, add new ones
+                                    const mergedEntries = [...userEntries];
+                                    
+                                    sheetsEntries.forEach(sheetEntry => {
+                                        const existingIndex = mergedEntries.findIndex(e => e.id === sheetEntry.id);
+                                        if (existingIndex >= 0) {
+                                            // Replace existing entry (Sheets wins)
+                                            mergedEntries[existingIndex] = sheetEntry;
+                                        } else {
+                                            // Add new entry from Sheets
+                                            mergedEntries.push(sheetEntry);
+                                        }
+                                    });
+                                    
+                                    // Sort by date (newest first)
+                                    mergedEntries.sort((a, b) => {
+                                        const dateA = new Date(a.experienceDate || a.date);
+                                        const dateB = new Date(b.experienceDate || b.date);
+                                        return dateB - dateA;
+                                    });
+                                    
+                                    setEntries(mergedEntries);
+                                    saveUserEntries(savedUser.sub, mergedEntries);
+                                    
+                                    // Update sync status
+                                    const newSyncStatus = {
+                                        lastSync: new Date().toISOString(),
+                                        direction: 'pull',
+                                        entryCount: sheetsEntries.length
+                                    };
+                                    setSyncStatus(newSyncStatus);
+                                    saveSyncStatus(newSyncStatus);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
+                    // Don't show error to user - auto-pull is silent
+                } finally {
+                    setIsPulling(false);
+                }
+            };
+            
+            // Wait a bit for Google APIs to load, then try auto-pull
+            setTimeout(() => {
+                autoPullFromSheets();
+            }, 1000);
         }
 
         const initGoogle = () => {
@@ -116,6 +190,73 @@ function App() {
             }
             
             setEntries(userEntries);
+            
+            // Load sync status
+            const savedSyncStatus = loadSyncStatus();
+            if (savedSyncStatus) {
+                setSyncStatus(savedSyncStatus);
+            }
+            
+            // Auto-pull from Sheets after login
+            const autoPullFromSheets = async () => {
+                try {
+                    if (typeof window !== 'undefined' && window.gapi && window.gapi.client) {
+                        await initGapi(GOOGLE_CLIENT_ID);
+                        const authorized = isAuthorized();
+                        setSheetsAuthorized(authorized);
+                        
+                        if (authorized) {
+                            const spreadsheetId = getStoredSpreadsheetId();
+                            if (spreadsheetId) {
+                                setIsPulling(true);
+                                const sheetsEntries = await syncFromSheets(spreadsheetId);
+                                
+                                if (sheetsEntries.length > 0) {
+                                    // Merge: Sheets data takes precedence (newer)
+                                    const mergedEntries = [...userEntries];
+                                    
+                                    sheetsEntries.forEach(sheetEntry => {
+                                        const existingIndex = mergedEntries.findIndex(e => e.id === sheetEntry.id);
+                                        if (existingIndex >= 0) {
+                                            mergedEntries[existingIndex] = sheetEntry;
+                                        } else {
+                                            mergedEntries.push(sheetEntry);
+                                        }
+                                    });
+                                    
+                                    // Sort by date (newest first)
+                                    mergedEntries.sort((a, b) => {
+                                        const dateA = new Date(a.experienceDate || a.date);
+                                        const dateB = new Date(b.experienceDate || b.date);
+                                        return dateB - dateA;
+                                    });
+                                    
+                                    setEntries(mergedEntries);
+                                    saveUserEntries(userData.sub, mergedEntries);
+                                    
+                                    // Update sync status
+                                    const newSyncStatus = {
+                                        lastSync: new Date().toISOString(),
+                                        direction: 'pull',
+                                        entryCount: sheetsEntries.length
+                                    };
+                                    setSyncStatus(newSyncStatus);
+                                    saveSyncStatus(newSyncStatus);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
+                } finally {
+                    setIsPulling(false);
+                }
+            };
+            
+            // Wait a bit for Google APIs to load, then try auto-pull
+            setTimeout(() => {
+                autoPullFromSheets();
+            }, 1000);
         } catch (e) {
             console.error('Error processing credential:', e);
             setError('Error signing in. Please try again.');
@@ -336,6 +477,8 @@ function App() {
     };
 
     const handleSyncToSheets = async () => {
+        if (isSyncing || isPulling) return;
+        
         if (entries.length === 0) {
             setError('No entries to sync. Create some entries first!');
             setTimeout(() => setError(null), 3000);
@@ -369,14 +512,66 @@ function App() {
                 console.log('Already authorized for Google Sheets');
             }
 
-            const spreadsheetId = getStoredSpreadsheetId();
+            let spreadsheetId = getStoredSpreadsheetId();
+            
+            // First, pull from Sheets to get latest data
+            if (spreadsheetId) {
+                try {
+                    setIsPulling(true);
+                    const sheetsEntries = await syncFromSheets(spreadsheetId);
+                    
+                    if (sheetsEntries.length > 0) {
+                        // Merge Sheets data with local data
+                        const mergedEntries = [...entries];
+                        
+                        sheetsEntries.forEach(sheetEntry => {
+                            const existingIndex = mergedEntries.findIndex(e => e.id === sheetEntry.id);
+                            if (existingIndex >= 0) {
+                                // Replace existing entry (Sheets wins on pull)
+                                mergedEntries[existingIndex] = sheetEntry;
+                            } else {
+                                // Add new entry from Sheets
+                                mergedEntries.push(sheetEntry);
+                            }
+                        });
+                        
+                        // Sort by date (newest first)
+                        mergedEntries.sort((a, b) => {
+                            const dateA = new Date(a.experienceDate || a.date);
+                            const dateB = new Date(b.experienceDate || b.date);
+                            return dateB - dateA;
+                        });
+                        
+                        setEntries(mergedEntries);
+                        saveUserEntries(user.sub, mergedEntries);
+                    }
+                } catch (pullError) {
+                    console.error('Error pulling from Sheets:', pullError);
+                    // Continue with push even if pull fails
+                } finally {
+                    setIsPulling(false);
+                }
+            }
+
+            // Then, push local data to Sheets
             const result = await syncToSheets(entries, spreadsheetId);
 
-            setSuccessMessage(
-                `Successfully synced ${result.entryCount} entries to Google Sheets! ` +
-                `View your spreadsheet: ${result.url}`
-            );
-            setTimeout(() => setSuccessMessage(null), 8000);
+            if (result.success) {
+                // Update sync status
+                const newSyncStatus = {
+                    lastSync: new Date().toISOString(),
+                    direction: 'push',
+                    entryCount: result.entryCount
+                };
+                setSyncStatus(newSyncStatus);
+                saveSyncStatus(newSyncStatus);
+                
+                setSuccessMessage(
+                    `Successfully synced ${result.entryCount} entries to Google Sheets! ` +
+                    `View your spreadsheet: ${result.url}`
+                );
+                setTimeout(() => setSuccessMessage(null), 8000);
+            }
         } catch (error) {
             console.error('Error syncing to Sheets:', error);
             let errorMessage = error.message || 'Failed to sync to Google Sheets';
@@ -483,6 +678,7 @@ function App() {
                 <div className="user-info">
                     <img src={user.picture} alt={user.name} className="user-avatar" />
                     <span className="user-name">{user.name}</span>
+                    <SyncIndicator syncStatus={syncStatus} isSyncing={isSyncing} isPulling={isPulling} />
                     <div className="header-actions">
                         <button 
                             className="btn btn-secondary" 
@@ -508,14 +704,16 @@ function App() {
                         <button 
                             className="btn btn-secondary" 
                             onClick={handleSyncToSheets}
-                            disabled={isSyncing || entries.length === 0}
-                            aria-label="Sync to Google Sheets"
+                            disabled={isSyncing || isPulling || entries.length === 0}
+                            aria-label="Sync with Google Sheets"
                             style={{ 
-                                opacity: (isSyncing || entries.length === 0) ? 0.6 : 1,
-                                cursor: (isSyncing || entries.length === 0) ? 'not-allowed' : 'pointer'
+                                opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
+                                cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            {isSyncing ? (
+                            {isPulling ? (
+                                <>⏳ Pulling...</>
+                            ) : isSyncing ? (
                                 <>⏳ Syncing...</>
                             ) : (
                                 <>📊 Sync to Sheets</>

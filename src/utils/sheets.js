@@ -329,3 +329,97 @@ export const clearStoredSpreadsheetId = () => {
     localStorage.removeItem('journalSpreadsheetId');
 };
 
+// Sync entries from Google Sheets (read)
+export const syncFromSheets = async (spreadsheetId = null) => {
+    try {
+        await waitForGapi();
+        
+        // Ensure client is initialized
+        if (!window.gapi.client.sheets) {
+            throw new Error('Google Sheets API not initialized. Please refresh and try again.');
+        }
+        
+        // Check if we have a token
+        const token = window.gapi.client.getToken();
+        if (!token || !token.access_token) {
+            throw new Error('Not authorized. Please grant Google Sheets access.');
+        }
+        
+        let targetSpreadsheetId = spreadsheetId || getStoredSpreadsheetId();
+        
+        if (!targetSpreadsheetId) {
+            // No spreadsheet exists yet, return empty array
+            return [];
+        }
+
+        // Read all data from the spreadsheet (skip header row)
+        const response = await window.gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: targetSpreadsheetId,
+            range: 'Journal Entries!A2:I'
+        });
+
+        if (!response.result || !response.result.values) {
+            return [];
+        }
+
+        const rows = response.result.values;
+        
+        // Convert rows back to entry objects
+        const entries = rows.map((row, index) => {
+            try {
+                // Parse date (row[0] or row[7] for experienceDate)
+                const dateStr = row[0] || new Date().toISOString();
+                const experienceDateStr = row[7] || dateStr;
+                
+                // Parse dates - handle various formats
+                let date = new Date(dateStr);
+                let experienceDate = new Date(experienceDateStr);
+                
+                // If date parsing fails, use current date
+                if (isNaN(date.getTime())) {
+                    date = new Date();
+                }
+                if (isNaN(experienceDate.getTime())) {
+                    experienceDate = date;
+                }
+                
+                // Parse tags (comma-separated string back to array)
+                const tagsStr = row[4] || '';
+                const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
+                
+                return {
+                    id: parseInt(row[8]) || Date.now() + index, // Use entry ID from sheet, or generate
+                    date: date.toISOString(),
+                    words: [
+                        row[1] || '',
+                        row[2] || '',
+                        row[3] || ''
+                    ],
+                    tags: tags,
+                    experienceSummary: row[5] || '',
+                    fullStory: row[6] || '',
+                    experienceDate: experienceDate.toISOString()
+                };
+            } catch (error) {
+                console.error(`Error parsing row ${index}:`, error);
+                return null;
+            }
+        }).filter(entry => entry !== null && entry.words[0] && entry.words[1] && entry.words[2]); // Filter out invalid entries
+
+        return entries;
+    } catch (error) {
+        console.error('Error syncing from Sheets:', error);
+        
+        // Provide more helpful error messages
+        if (error.status === 403 || error.status === 401) {
+            throw new Error('Permission denied. Please grant Google Sheets access when prompted.');
+        } else if (error.status === 400) {
+            throw new Error('Invalid request. The spreadsheet may not exist or you may not have access.');
+        } else if (error.message) {
+            throw error;
+        } else {
+            throw new Error(`Sync failed: ${error.status || 'Unknown error'}`);
+        }
+    }
+};
+

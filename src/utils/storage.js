@@ -76,3 +76,28 @@ export const migrateEntriesToTags = (entries) => {
     });
 };
 
+// Sync status storage
+export const saveSyncStatus = (status) => {
+    localStorage.setItem('journalSyncStatus', JSON.stringify({
+        ...status,
+        timestamp: new Date().toISOString()
+    }));
+};
+
+export const loadSyncStatus = () => {
+    const stored = localStorage.getItem('journalSyncStatus');
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error('Error loading sync status:', e);
+            return null;
+        }
+    }
+    return null;
+};
+
+export const clearSyncStatus = () => {
+    localStorage.removeItem('journalSyncStatus');
+};
+
