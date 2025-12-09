@@ -417,15 +417,20 @@ function App() {
 
         try {
             // Initialize gapi if not already done
-            if (!window.gapi || !window.gapi.client) {
+            if (!window.gapi || !window.gapi.client || !window.gapi.client.sheets) {
+                console.log('Initializing Google Sheets API...');
                 await initGapi(GOOGLE_CLIENT_ID);
             }
 
             // Check if already authorized
             if (!isAuthorized()) {
+                console.log('Requesting Google Sheets authorization...');
                 // Request authorization
                 await requestAuth(GOOGLE_CLIENT_ID);
                 setSheetsAuthorized(true);
+                console.log('Authorization granted');
+            } else {
+                console.log('Already authorized for Google Sheets');
             }
 
             // Get or create spreadsheet
