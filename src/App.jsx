@@ -318,18 +318,6 @@ function App() {
         setIsEditingDate(false);
     };
 
-    // Calculate stats
-    const stats = {
-        total: entries.length,
-        tags: new Set(entries.flatMap(e => e.tags || [])).size,
-        thisMonth: entries.filter(e => {
-            const entryDate = new Date(e.experienceDate || e.date);
-            const now = new Date();
-            return entryDate.getMonth() === now.getMonth() && 
-                   entryDate.getFullYear() === now.getFullYear();
-        }).length,
-        withStories: entries.filter(e => e.fullStory && e.fullStory.length > 0).length
-    };
 
     // Data Export/Import
     const exportData = () => {
