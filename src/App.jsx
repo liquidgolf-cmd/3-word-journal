@@ -38,6 +38,11 @@ function App() {
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const userMenuRef = useRef(null);
+    const [autoSyncFailed, setAutoSyncFailed] = useState(false);
+    const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+    const isInitialLoad = useRef(true);
+    const syncDebounceTimer = useRef(null);
+    const isSyncingFromSheets = useRef(false);
 
     // Initialize Google Sign-In and Sheets API, and migrate entries
     useEffect(() => {
@@ -88,6 +93,7 @@ function App() {
                     setSheetsAuthorized(authorized);
                     
                     if (authorized) {
+                        setSheetsAuthorized(true);
                         const spreadsheetId = getStoredSpreadsheetId();
                         if (spreadsheetId) {
                             setIsPulling(true);
@@ -118,6 +124,8 @@ function App() {
                                         return dateB - dateA;
                                     });
                                     
+                                    // Mark that we're syncing from Sheets to prevent auto-sync loop
+                                    isSyncingFromSheets.current = true;
                                     setEntries(mergedEntries);
                                     saveUserEntries(savedUser.sub, mergedEntries);
                                     
@@ -137,6 +145,8 @@ function App() {
                                 setIsPulling(false);
                             }
                         }
+                    } else {
+                        setSheetsAuthorized(false);
                     }
                 } catch (error) {
                     console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
@@ -246,6 +256,7 @@ function App() {
                     setSheetsAuthorized(authorized);
                     
                     if (authorized) {
+                        setSheetsAuthorized(true);
                         const spreadsheetId = getStoredSpreadsheetId();
                         if (spreadsheetId) {
                             setIsPulling(true);
@@ -273,6 +284,8 @@ function App() {
                                         return dateB - dateA;
                                     });
                                     
+                                    // Mark that we're syncing from Sheets to prevent auto-sync loop
+                                    isSyncingFromSheets.current = true;
                                     setEntries(mergedEntries);
                                     saveUserEntries(userData.sub, mergedEntries);
                                     
@@ -292,6 +305,8 @@ function App() {
                                 setIsPulling(false);
                             }
                         }
+                    } else {
+                        setSheetsAuthorized(false);
                     }
                 } catch (error) {
                     console.log('Auto-pull from Sheets failed (this is okay if no spreadsheet exists yet):', error.message);
@@ -324,6 +339,49 @@ function App() {
             saveUserEntries(user.sub, entries);
         }
     }, [entries, isAuthenticated, user]);
+
+    // Auto-sync to Sheets when entries change (debounced)
+    useEffect(() => {
+        // Skip on initial load
+        if (isInitialLoad.current) {
+            isInitialLoad.current = false;
+            return;
+        }
+
+        // Skip if change came from Sheets pull
+        if (isSyncingFromSheets.current) {
+            isSyncingFromSheets.current = false;
+            return;
+        }
+
+        // Skip if not authorized or already syncing
+        if (!sheetsAuthorized || isSyncing || isPulling || !isAuthenticated || !user) {
+            return;
+        }
+
+        // Skip if no entries (unless it's a delete operation)
+        if (entries.length === 0) {
+            return;
+        }
+
+        // Clear existing debounce timer
+        if (syncDebounceTimer.current) {
+            clearTimeout(syncDebounceTimer.current);
+        }
+
+        // Set new debounce timer (2 seconds)
+        syncDebounceTimer.current = setTimeout(() => {
+            autoSyncToSheets();
+        }, 2000);
+
+        // Cleanup on unmount
+        return () => {
+            if (syncDebounceTimer.current) {
+                clearTimeout(syncDebounceTimer.current);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entries.length, entries.map(e => e.id).join(',')]);
 
     // Close user menu when clicking outside
     useEffect(() => {
@@ -539,6 +597,111 @@ function App() {
         setTimeout(() => setSuccessMessage(null), 3000);
     };
 
+    // Auto-sync function (silent, no user-facing errors)
+    const autoSyncToSheets = async () => {
+        if (isSyncing || isPulling || !sheetsAuthorized || !isAuthenticated || !user) {
+            return;
+        }
+
+        if (entries.length === 0) {
+            return;
+        }
+
+        setIsSyncing(true);
+
+        try {
+            // Ensure Google APIs are loaded
+            if (typeof window === 'undefined' || !window.gapi) {
+                throw new Error('Google APIs not loaded');
+            }
+
+            // Initialize gapi client if needed
+            if (!window.gapi.client || !window.gapi.client.sheets) {
+                await initGapi(GOOGLE_CLIENT_ID);
+            }
+
+            // Check authorization
+            if (!isAuthorized()) {
+                setSheetsAuthorized(false);
+                setAutoSyncFailed(true);
+                return;
+            }
+
+            let spreadsheetId = getStoredSpreadsheetId();
+            let entriesToSync = [...entries];
+
+            // First, pull from Sheets to get latest data
+            if (spreadsheetId) {
+                try {
+                    setIsPulling(true);
+                    const sheetsEntries = await syncFromSheets(spreadsheetId);
+
+                    if (sheetsEntries.length > 0) {
+                        // Merge Sheets data with local data
+                        const mergedEntries = [...entries];
+
+                        sheetsEntries.forEach(sheetEntry => {
+                            const existingIndex = mergedEntries.findIndex(e => e.id === sheetEntry.id);
+                            if (existingIndex >= 0) {
+                                mergedEntries[existingIndex] = sheetEntry;
+                            } else {
+                                mergedEntries.push(sheetEntry);
+                            }
+                        });
+
+                        // Sort by date (newest first)
+                        mergedEntries.sort((a, b) => {
+                            const dateA = new Date(a.experienceDate || a.date);
+                            const dateB = new Date(b.experienceDate || b.date);
+                            return dateB - dateA;
+                        });
+
+                        // Mark that we're syncing from Sheets to prevent loop
+                        isSyncingFromSheets.current = true;
+                        setEntries(mergedEntries);
+                        saveUserEntries(user.sub, mergedEntries);
+                        entriesToSync = mergedEntries;
+                    }
+                } catch (pullError) {
+                    console.log('Auto-pull failed:', pullError.message);
+                    // Continue with push even if pull fails
+                } finally {
+                    setIsPulling(false);
+                }
+            }
+
+            // Then, push local data to Sheets
+            const result = await syncToSheets(entriesToSync, spreadsheetId);
+
+            if (result.success) {
+                // Update sync status
+                const newSyncStatus = {
+                    lastSync: new Date().toISOString(),
+                    direction: 'push',
+                    entryCount: result.entryCount
+                };
+                setSyncStatus(newSyncStatus);
+                saveSyncStatus(newSyncStatus);
+
+                // Reset failure state on success
+                setConsecutiveFailures(0);
+                setAutoSyncFailed(false);
+            }
+        } catch (error) {
+            console.error('Auto-sync error:', error);
+            // Track consecutive failures
+            const newFailureCount = consecutiveFailures + 1;
+            setConsecutiveFailures(newFailureCount);
+
+            // Show manual sync button after 2 consecutive failures
+            if (newFailureCount >= 2) {
+                setAutoSyncFailed(true);
+            }
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
     const handleSyncToSheets = async () => {
         if (isSyncing || isPulling) return;
         
@@ -657,6 +820,10 @@ function App() {
                 };
                 setSyncStatus(newSyncStatus);
                 saveSyncStatus(newSyncStatus);
+                
+                // Reset failure state on successful manual sync
+                setConsecutiveFailures(0);
+                setAutoSyncFailed(false);
                 
                 setSuccessMessage(
                     `Successfully synced ${result.entryCount} entries to Google Sheets! ` +
@@ -803,27 +970,30 @@ function App() {
                                             aria-label="Import journal data file"
                                         />
                                     </label>
-                                    <button 
-                                        className="btn btn-secondary" 
-                                        onClick={() => {
-                                            handleSyncToSheets();
-                                            // Don't close menu immediately - let user see sync status
-                                        }}
-                                        disabled={isSyncing || isPulling || entries.length === 0}
-                                        aria-label="Sync with Google Sheets"
-                                        style={{ 
-                                            opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
-                                            cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
-                                        }}
-                                    >
-                                        {isPulling ? (
-                                            <>⏳ Pulling...</>
-                                        ) : isSyncing ? (
-                                            <>⏳ Syncing...</>
-                                        ) : (
-                                            <>📊 Sync to Sheets</>
-                                        )}
-                                    </button>
+                                    {(autoSyncFailed || !sheetsAuthorized) && (
+                                        <button 
+                                            className="btn btn-secondary" 
+                                            onClick={() => {
+                                                handleSyncToSheets();
+                                                // Don't close menu immediately - let user see sync status
+                                            }}
+                                            disabled={isSyncing || isPulling || entries.length === 0}
+                                            aria-label="Sync with Google Sheets"
+                                            style={{ 
+                                                opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
+                                                cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
+                                            }}
+                                            title={autoSyncFailed ? "Auto-sync failed. Click to sync manually." : "Grant Google Sheets access to enable auto-sync."}
+                                        >
+                                            {isPulling ? (
+                                                <>⏳ Pulling...</>
+                                            ) : isSyncing ? (
+                                                <>⏳ Syncing...</>
+                                            ) : (
+                                                <>📊 Sync to Sheets {autoSyncFailed && '⚠️'}</>
+                                            )}
+                                        </button>
+                                    )}
                                     <button 
                                         className="btn-logout" 
                                         onClick={() => {
