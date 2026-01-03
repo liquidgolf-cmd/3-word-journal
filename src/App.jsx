@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { loadUser, saveUser, clearUser, loadUserEntries, saveUserEntries, migrateEntriesToTags, saveSyncStatus, loadSyncStatus } from './utils/storage';
 import { GOOGLE_CLIENT_ID, initializeGoogleSignIn, renderGoogleButton, decodeJWT, handleLogout as authLogout } from './utils/auth';
 import { initGapi, requestAuth, syncToSheets, syncFromSheets, getStoredSpreadsheetId, isAuthorized } from './utils/sheets';
@@ -36,6 +36,8 @@ function App() {
     const [sheetsAuthorized, setSheetsAuthorized] = useState(false);
     const [syncStatus, setSyncStatus] = useState(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const userMenuRef = useRef(null);
 
     // Initialize Google Sign-In and Sheets API, and migrate entries
     useEffect(() => {
@@ -322,6 +324,25 @@ function App() {
             saveUserEntries(user.sub, entries);
         }
     }, [entries, isAuthenticated, user]);
+
+    // Close user menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        if (showUserMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('touchstart', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [showUserMenu]);
 
     const generateThreeWords = async () => {
         if (!experienceText.trim()) {
@@ -746,61 +767,90 @@ function App() {
                 onDismiss={() => setSuccessMessage(null)} 
             />
 
-            {/* Actions Bar */}
-            <div className="actions-bar">
-                <div className="user-info">
+            {/* User Menu Toggle */}
+            <div className="actions-bar" ref={userMenuRef}>
+                <button 
+                    className="user-menu-toggle"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    aria-label="Toggle user menu"
+                    aria-expanded={showUserMenu}
+                >
                     <img src={user.picture} alt={user.name} className="user-avatar" />
                     <span className="user-name">{user.name}</span>
-                    <SyncIndicator syncStatus={syncStatus} isSyncing={isSyncing} isPulling={isPulling} />
-                    <div className="header-actions">
-                        <button 
-                            className="btn btn-secondary" 
-                            onClick={exportData}
-                            aria-label="Export journal data"
-                        >
-                            📥 Export
-                        </button>
-                        <label 
-                            className="btn btn-secondary"
-                            style={{ cursor: 'pointer', margin: 0 }}
-                            aria-label="Import journal data"
-                        >
-                            📤 Import
-                            <input 
-                                type="file" 
-                                accept=".json" 
-                                onChange={importData}
-                                style={{ display: 'none' }}
-                                aria-label="Import journal data file"
-                            />
-                        </label>
-                        <button 
-                            className="btn btn-secondary" 
-                            onClick={handleSyncToSheets}
-                            disabled={isSyncing || isPulling || entries.length === 0}
-                            aria-label="Sync with Google Sheets"
-                            style={{ 
-                                opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
-                                cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
-                            }}
-                        >
-                            {isPulling ? (
-                                <>⏳ Pulling...</>
-                            ) : isSyncing ? (
-                                <>⏳ Syncing...</>
-                            ) : (
-                                <>📊 Sync to Sheets</>
-                            )}
-                        </button>
-                        <button 
-                            className="btn-logout" 
-                            onClick={handleLogout}
-                            aria-label="Sign out"
-                        >
-                            Sign Out
-                        </button>
+                    <span className="menu-arrow">{showUserMenu ? '▲' : '▼'}</span>
+                </button>
+                
+                {showUserMenu && (
+                    <div className="user-menu-dropdown">
+                        <div className="user-menu-header">
+                            <img src={user.picture} alt={user.name} className="user-avatar" />
+                            <div className="user-menu-info">
+                                <span className="user-name">{user.name}</span>
+                                <SyncIndicator syncStatus={syncStatus} isSyncing={isSyncing} isPulling={isPulling} />
+                            </div>
+                        </div>
+                        <div className="user-menu-actions">
+                            <button 
+                                className="btn btn-secondary" 
+                                onClick={() => {
+                                    exportData();
+                                    setShowUserMenu(false);
+                                }}
+                                aria-label="Export journal data"
+                            >
+                                📥 Export
+                            </button>
+                            <label 
+                                className="btn btn-secondary"
+                                style={{ cursor: 'pointer', margin: 0 }}
+                                aria-label="Import journal data"
+                            >
+                                📤 Import
+                                <input 
+                                    type="file" 
+                                    accept=".json" 
+                                    onChange={(e) => {
+                                        importData(e);
+                                        setShowUserMenu(false);
+                                    }}
+                                    style={{ display: 'none' }}
+                                    aria-label="Import journal data file"
+                                />
+                            </label>
+                            <button 
+                                className="btn btn-secondary" 
+                                onClick={() => {
+                                    handleSyncToSheets();
+                                    // Don't close menu immediately - let user see sync status
+                                }}
+                                disabled={isSyncing || isPulling || entries.length === 0}
+                                aria-label="Sync with Google Sheets"
+                                style={{ 
+                                    opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
+                                    cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {isPulling ? (
+                                    <>⏳ Pulling...</>
+                                ) : isSyncing ? (
+                                    <>⏳ Syncing...</>
+                                ) : (
+                                    <>📊 Sync to Sheets</>
+                                )}
+                            </button>
+                            <button 
+                                className="btn-logout" 
+                                onClick={() => {
+                                    handleLogout();
+                                    setShowUserMenu(false);
+                                }}
+                                aria-label="Sign out"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <TabNavigation currentView={currentView} onViewChange={setCurrentView} />
