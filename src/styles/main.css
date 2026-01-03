@@ -32,16 +32,46 @@ body {
     padding: 2rem;
     position: relative;
     margin-bottom: 1rem;
-    text-align: center;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .header-title {
-    width: 100%;
+    flex: 1;
+    text-align: center;
+}
+
+.header-user-menu {
+    position: relative;
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
-    .actions-bar {
-        padding: 0 1rem;
+    .header {
+        padding: 1.5rem 1rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .header-title {
+        width: 100%;
+        order: 1;
+    }
+    
+    .header-user-menu {
+        width: 100%;
+        order: 2;
     }
     
     .user-menu-toggle {
@@ -50,22 +80,18 @@ body {
     }
     
     .user-menu-dropdown {
-        left: 1rem;
-        right: 1rem;
-        transform: none;
+        left: 0;
+        right: 0;
         min-width: auto;
-        width: calc(100% - 2rem);
+        width: 100%;
     }
     
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .header .subtitle {
+        font-size: 1rem;
     }
     
     .user-menu-header {
@@ -100,6 +126,10 @@ body {
 }
 
 @media (max-width: 480px) {
+    .header {
+        padding: 1rem 0.5rem;
+    }
+    
     .user-menu-toggle {
         padding: 0.75rem 1rem;
     }
@@ -113,9 +143,9 @@ body {
     }
     
     .user-menu-dropdown {
-        left: 0.5rem;
-        right: 0.5rem;
-        width: calc(100% - 1rem);
+        left: 0;
+        right: 0;
+        width: 100%;
     }
     
     .user-menu-header {
@@ -1573,8 +1603,7 @@ body {
 .user-menu-dropdown {
     position: absolute;
     top: calc(100% + 0.5rem);
-    left: 50%;
-    transform: translateX(-50%);
+    right: 0;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(44, 24, 16, 0.15);
@@ -1588,11 +1617,11 @@ body {
 @keyframes slideDown {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
+        transform: translateY(-10px);
     }
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0);
     }
 }
 

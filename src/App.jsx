@@ -748,10 +748,96 @@ function App() {
 
     return (
         <div className="app-container">
-            <header className="header">
-                <div className="header-title">
-                    <h1>3 Word Journal</h1>
-                    <p className="subtitle">Capture life's lessons in just three words</p>
+            <header className="header" ref={userMenuRef}>
+                <div className="header-content">
+                    <div className="header-title">
+                        <h1>3 Word Journal</h1>
+                        <p className="subtitle">Capture life's lessons in just three words</p>
+                    </div>
+                    <div className="header-user-menu">
+                        <button 
+                            className="user-menu-toggle"
+                            onClick={() => setShowUserMenu(!showUserMenu)}
+                            aria-label="Toggle user menu"
+                            aria-expanded={showUserMenu}
+                        >
+                            <img src={user.picture} alt={user.name} className="user-avatar" />
+                            <span className="user-name">{user.name}</span>
+                            <span className="menu-arrow">{showUserMenu ? '▲' : '▼'}</span>
+                        </button>
+                        
+                        {showUserMenu && (
+                            <div className="user-menu-dropdown">
+                                <div className="user-menu-header">
+                                    <img src={user.picture} alt={user.name} className="user-avatar" />
+                                    <div className="user-menu-info">
+                                        <span className="user-name">{user.name}</span>
+                                        <SyncIndicator syncStatus={syncStatus} isSyncing={isSyncing} isPulling={isPulling} />
+                                    </div>
+                                </div>
+                                <div className="user-menu-actions">
+                                    <button 
+                                        className="btn btn-secondary" 
+                                        onClick={() => {
+                                            exportData();
+                                            setShowUserMenu(false);
+                                        }}
+                                        aria-label="Export journal data"
+                                    >
+                                        📥 Export
+                                    </button>
+                                    <label 
+                                        className="btn btn-secondary"
+                                        style={{ cursor: 'pointer', margin: 0 }}
+                                        aria-label="Import journal data"
+                                    >
+                                        📤 Import
+                                        <input 
+                                            type="file" 
+                                            accept=".json" 
+                                            onChange={(e) => {
+                                                importData(e);
+                                                setShowUserMenu(false);
+                                            }}
+                                            style={{ display: 'none' }}
+                                            aria-label="Import journal data file"
+                                        />
+                                    </label>
+                                    <button 
+                                        className="btn btn-secondary" 
+                                        onClick={() => {
+                                            handleSyncToSheets();
+                                            // Don't close menu immediately - let user see sync status
+                                        }}
+                                        disabled={isSyncing || isPulling || entries.length === 0}
+                                        aria-label="Sync with Google Sheets"
+                                        style={{ 
+                                            opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
+                                            cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
+                                        }}
+                                    >
+                                        {isPulling ? (
+                                            <>⏳ Pulling...</>
+                                        ) : isSyncing ? (
+                                            <>⏳ Syncing...</>
+                                        ) : (
+                                            <>📊 Sync to Sheets</>
+                                        )}
+                                    </button>
+                                    <button 
+                                        className="btn-logout" 
+                                        onClick={() => {
+                                            handleLogout();
+                                            setShowUserMenu(false);
+                                        }}
+                                        aria-label="Sign out"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -766,92 +852,6 @@ function App() {
                 type="success" 
                 onDismiss={() => setSuccessMessage(null)} 
             />
-
-            {/* User Menu Toggle */}
-            <div className="actions-bar" ref={userMenuRef}>
-                <button 
-                    className="user-menu-toggle"
-                    onClick={() => setShowUserMenu(!showUserMenu)}
-                    aria-label="Toggle user menu"
-                    aria-expanded={showUserMenu}
-                >
-                    <img src={user.picture} alt={user.name} className="user-avatar" />
-                    <span className="user-name">{user.name}</span>
-                    <span className="menu-arrow">{showUserMenu ? '▲' : '▼'}</span>
-                </button>
-                
-                {showUserMenu && (
-                    <div className="user-menu-dropdown">
-                        <div className="user-menu-header">
-                            <img src={user.picture} alt={user.name} className="user-avatar" />
-                            <div className="user-menu-info">
-                                <span className="user-name">{user.name}</span>
-                                <SyncIndicator syncStatus={syncStatus} isSyncing={isSyncing} isPulling={isPulling} />
-                            </div>
-                        </div>
-                        <div className="user-menu-actions">
-                            <button 
-                                className="btn btn-secondary" 
-                                onClick={() => {
-                                    exportData();
-                                    setShowUserMenu(false);
-                                }}
-                                aria-label="Export journal data"
-                            >
-                                📥 Export
-                            </button>
-                            <label 
-                                className="btn btn-secondary"
-                                style={{ cursor: 'pointer', margin: 0 }}
-                                aria-label="Import journal data"
-                            >
-                                📤 Import
-                                <input 
-                                    type="file" 
-                                    accept=".json" 
-                                    onChange={(e) => {
-                                        importData(e);
-                                        setShowUserMenu(false);
-                                    }}
-                                    style={{ display: 'none' }}
-                                    aria-label="Import journal data file"
-                                />
-                            </label>
-                            <button 
-                                className="btn btn-secondary" 
-                                onClick={() => {
-                                    handleSyncToSheets();
-                                    // Don't close menu immediately - let user see sync status
-                                }}
-                                disabled={isSyncing || isPulling || entries.length === 0}
-                                aria-label="Sync with Google Sheets"
-                                style={{ 
-                                    opacity: (isSyncing || isPulling || entries.length === 0) ? 0.6 : 1,
-                                    cursor: (isSyncing || isPulling || entries.length === 0) ? 'not-allowed' : 'pointer'
-                                }}
-                            >
-                                {isPulling ? (
-                                    <>⏳ Pulling...</>
-                                ) : isSyncing ? (
-                                    <>⏳ Syncing...</>
-                                ) : (
-                                    <>📊 Sync to Sheets</>
-                                )}
-                            </button>
-                            <button 
-                                className="btn-logout" 
-                                onClick={() => {
-                                    handleLogout();
-                                    setShowUserMenu(false);
-                                }}
-                                aria-label="Sign out"
-                            >
-                                Sign Out
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
 
             <TabNavigation currentView={currentView} onViewChange={setCurrentView} />
 
