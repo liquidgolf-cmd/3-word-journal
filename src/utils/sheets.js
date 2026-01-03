@@ -197,13 +197,13 @@ export const createSpreadsheet = async (title = '3 Word Journal') => {
 // Set up headers in the spreadsheet
 const setHeaders = async (spreadsheetId) => {
     const headers = [
-        ['Date', 'Word 1', 'Word 2', 'Word 3', 'Tags', 'Experience Summary', 'Full Story', 'Experience Date', 'Entry ID']
+        ['Title', 'Date', 'Word 1', 'Word 2', 'Word 3', 'Tags', 'Experience Summary', 'Full Story', 'Experience Date', 'Entry ID']
     ];
 
     try {
         await window.gapi.client.sheets.spreadsheets.values.update({
             spreadsheetId: spreadsheetId,
-            range: 'Journal Entries!A1:I1',
+            range: 'Journal Entries!A1:J1',
             valueInputOption: 'RAW',
             resource: {
                 values: headers
@@ -273,6 +273,7 @@ export const syncToSheets = async (entries, spreadsheetId = null) => {
 
         // Format entries as rows
         const rows = entries.map(entry => [
+            entry.title || entry.experienceSummary || '',
             new Date(entry.date).toLocaleDateString(),
             entry.words[0] || '',
             entry.words[1] || '',
@@ -287,7 +288,7 @@ export const syncToSheets = async (entries, spreadsheetId = null) => {
         // Clear existing data (except headers)
         await window.gapi.client.sheets.spreadsheets.values.clear({
             spreadsheetId: targetSpreadsheetId,
-            range: 'Journal Entries!A2:I'
+            range: 'Journal Entries!A2:J'
         });
 
         // Add new data
@@ -363,7 +364,7 @@ export const syncFromSheets = async (spreadsheetId = null) => {
         // Read all data from the spreadsheet (skip header row)
         const response = await window.gapi.client.sheets.spreadsheets.values.get({
             spreadsheetId: targetSpreadsheetId,
-            range: 'Journal Entries!A2:I'
+            range: 'Journal Entries!A2:J'
         });
 
         if (!response.result || !response.result.values) {
@@ -375,9 +376,14 @@ export const syncFromSheets = async (spreadsheetId = null) => {
         // Convert rows back to entry objects
         const entries = rows.map((row, index) => {
             try {
-                // Parse date (row[0] or row[7] for experienceDate)
-                const dateStr = row[0] || new Date().toISOString();
-                const experienceDateStr = row[7] || dateStr;
+                // Handle both old format (no title) and new format (with title)
+                // Old format: Date, Word1, Word2, Word3, Tags, Summary, Story, ExpDate, ID (9 columns)
+                // New format: Title, Date, Word1, Word2, Word3, Tags, Summary, Story, ExpDate, ID (10 columns)
+                const hasTitle = row.length >= 10;
+                
+                const title = hasTitle ? (row[0] || '') : '';
+                const dateStr = hasTitle ? (row[1] || new Date().toISOString()) : (row[0] || new Date().toISOString());
+                const experienceDateStr = hasTitle ? (row[8] || dateStr) : (row[7] || dateStr);
                 
                 // Parse dates - handle various formats
                 let date = new Date(dateStr);
@@ -392,27 +398,28 @@ export const syncFromSheets = async (spreadsheetId = null) => {
                 }
                 
                 // Parse tags (comma-separated string back to array)
-                const tagsStr = row[4] || '';
+                const tagsStr = hasTitle ? (row[5] || '') : (row[4] || '');
                 const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
                 
                 return {
-                    id: parseInt(row[8]) || Date.now() + index, // Use entry ID from sheet, or generate
+                    id: parseInt(hasTitle ? row[9] : row[8]) || Date.now() + index, // Use entry ID from sheet, or generate
+                    title: title,
                     date: date.toISOString(),
                     words: [
-                        row[1] || '',
-                        row[2] || '',
-                        row[3] || ''
+                        hasTitle ? (row[2] || '') : (row[1] || ''),
+                        hasTitle ? (row[3] || '') : (row[2] || ''),
+                        hasTitle ? (row[4] || '') : (row[3] || '')
                     ],
                     tags: tags,
-                    experienceSummary: row[5] || '',
-                    fullStory: row[6] || '',
+                    experienceSummary: hasTitle ? (row[6] || '') : (row[5] || ''),
+                    fullStory: hasTitle ? (row[7] || '') : (row[6] || ''),
                     experienceDate: experienceDate.toISOString()
                 };
             } catch (error) {
                 console.error(`Error parsing row ${index}:`, error);
                 return null;
             }
-        }).filter(entry => entry !== null && entry.words[0] && entry.words[1] && entry.words[2]); // Filter out invalid entries
+        }).filter(entry => entry !== null && (entry.title || entry.experienceSummary || entry.words[0] || entry.words[1] || entry.words[2])); // Filter out invalid entries
 
         return entries;
     } catch (error) {

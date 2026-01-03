@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import EntryForm from './EntryForm';
 import TagInput from './TagInput';
+import { generateTitle } from '../utils/helpers';
 
 export default function InputView({
     entries,
@@ -71,17 +72,41 @@ export default function InputView({
             setInputMode('manual');
         }
     }, [editingEntry]);
+    
+    // Generate title when experienceText changes (for new entries)
+    useEffect(() => {
+        if (!editingEntry && experienceText) {
+            // Title will be generated on submit, but we can preview it here if needed
+        }
+    }, [experienceText, editingEntry]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setError(null);
         setSuccessMessage(null);
         
-        if (!word1 || !word2 || !word3) {
-            setError('Please fill in all three words');
+        // Only require experienceText and experienceDate
+        if (!experienceText || !experienceText.trim()) {
+            setError('Please describe your experience');
             setTimeout(() => setError(null), 3000);
             return;
         }
+        
+        if (!experienceDate) {
+            setError('Please select a date');
+            setTimeout(() => setError(null), 3000);
+            return;
+        }
+
+        // Generate title from experience text
+        const title = generateTitle(experienceText);
+        
+        // Use provided words or empty strings if not provided
+        const entryWords = [
+            word1 || '',
+            word2 || '',
+            word3 || ''
+        ];
 
         if (editingEntry) {
             // Update existing entry
@@ -89,7 +114,8 @@ export default function InputView({
                 entry.id === editingEntry.id
                     ? {
                         ...entry,
-                        words: [word1, word2, word3],
+                        title: title,
+                        words: entryWords,
                         tags: tags,
                         experienceSummary: experienceText,
                         fullStory: fullStory,
@@ -108,7 +134,8 @@ export default function InputView({
             // Create new entry
             const newEntry = {
                 id: Date.now(),
-                words: [word1, word2, word3],
+                title: title,
+                words: entryWords,
                 tags: tags,
                 experienceSummary: experienceText,
                 fullStory: '',

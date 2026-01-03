@@ -11,6 +11,8 @@ export default function EntryCard({ entry, onClick }) {
     };
 
     const tags = entry.tags || [];
+    const title = entry.title || entry.experienceSummary || '';
+    const words = entry.words || ['', '', ''];
 
     return (
         <div 
@@ -24,16 +26,24 @@ export default function EntryCard({ entry, onClick }) {
                     onClick();
                 }
             }}
-            aria-label={`Entry: ${entry.words.join(', ')}${tags.length > 0 ? ` - Tags: ${tags.join(', ')}` : ''}`}
+            aria-label={`Entry: ${title} - ${words.join(', ')}${tags.length > 0 ? ` - Tags: ${tags.join(', ')}` : ''}`}
         >
+            {title && (
+                <div className="entry-title">
+                    {title}
+                </div>
+            )}
             <div className="entry-words">
-                {entry.words.map((word, i) => (
-                    <span key={i} className="word-tag">
-                        {word}
-                    </span>
+                {words.map((word, i) => (
+                    word ? (
+                        <span key={i} className="word-tag">
+                            {word}
+                        </span>
+                    ) : null
                 ))}
             </div>
             <div className="entry-meta">
+                <span className="entry-date">{formatDate(entry.experienceDate || entry.date)}</span>
                 {tags.length > 0 && (
                     <div className="entry-tags">
                         {tags.map((tag, i) => (
@@ -43,7 +53,6 @@ export default function EntryCard({ entry, onClick }) {
                         ))}
                     </div>
                 )}
-                <span className="entry-date">{formatDate(entry.experienceDate || entry.date)}</span>
             </div>
             {entry.fullStory && (
                 <div className="entry-has-story" aria-label="Has full story">

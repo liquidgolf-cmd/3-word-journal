@@ -23,26 +23,28 @@ export default function EntryForm({
                 {/* 1. Describe Your Experience */}
                 {inputMode === 'ai' ? (
                     <div className="form-group">
-                        <label htmlFor="experience-text">Describe Your Experience</label>
+                        <label htmlFor="experience-text">Describe Your Experience *</label>
                         <textarea
                             id="experience-text"
                             placeholder="Tell me about what happened... I'll help you distill it into three words."
                             value={experienceText}
                             onChange={(e) => setExperienceText(e.target.value)}
                             rows="4"
-                            aria-label="Describe your experience for AI word generation"
+                            required
+                            aria-label="Describe your experience for AI word generation (required)"
                         />
                     </div>
                 ) : (
                     <div className="form-group">
-                        <label htmlFor="experience-summary">Describe Your Experience</label>
+                        <label htmlFor="experience-summary">Describe Your Experience *</label>
                         <textarea
                             id="experience-summary"
                             placeholder="Quick summary of what happened..."
                             value={experienceText}
                             onChange={(e) => setExperienceText(e.target.value)}
                             rows="4"
-                            aria-label="Experience summary"
+                            required
+                            aria-label="Experience summary (required)"
                         />
                         <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
                             You can add the full detailed story later
@@ -52,18 +54,16 @@ export default function EntryForm({
 
                 {/* 2. When Did This Happen? */}
                 <div className="form-group">
-                    <label htmlFor="experience-date">When Did This Happen?</label>
+                    <label htmlFor="experience-date">When Did This Happen? *</label>
                     <input
                         id="experience-date"
                         type="date"
                         value={experienceDate}
                         onChange={(e) => setExperienceDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
-                        aria-label="Date when the experience happened"
+                        required
+                        aria-label="Date when the experience happened (required)"
                     />
-                    <div style={{fontSize: '0.85rem', color: 'var(--soft-gray)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                        Leave blank to use today's date
-                    </div>
                 </div>
 
                 {/* 3. Entry Mode */}
