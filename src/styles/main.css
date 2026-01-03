@@ -86,8 +86,8 @@ body {
         height: 28px;
     }
     
-    .menu-arrow {
-        font-size: 0.6rem;
+    .menu-icon {
+        font-size: 0.9rem;
         margin-left: 0;
     }
     
@@ -162,8 +162,8 @@ body {
         height: 24px;
     }
     
-    .menu-arrow {
-        font-size: 0.55rem;
+    .menu-icon {
+        font-size: 0.85rem;
     }
     
     .user-menu-dropdown {
@@ -1632,11 +1632,16 @@ body {
     transform: translateY(0);
 }
 
-.menu-arrow {
-    font-size: 0.7rem;
+.menu-icon {
+    font-size: 1rem;
     color: var(--warm-brown);
     transition: transform 0.2s ease;
     margin-left: 0.25rem;
+    display: inline-block;
+}
+
+.menu-icon:hover {
+    transform: rotate(90deg);
 }
 
 .user-menu-dropdown {
@@ -1702,6 +1707,12 @@ body {
     -webkit-tap-highlight-color: rgba(196, 166, 97, 0.3);
     width: 100%;
     justify-content: center;
+}
+
+.user-menu-actions .btn.active {
+    background: var(--accent-gold);
+    color: white;
+    border-color: var(--accent-gold);
 }
 
 .user-info {

@@ -7,13 +7,14 @@ export default function JournalView({
     viewMode,
     setViewMode,
     onEntryClick,
-    onEditEntry
+    onEditEntry,
+    showStats,
+    setShowStats
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState([]);
     const [dateFilter, setDateFilter] = useState('all');
     const [specificYear, setSpecificYear] = useState('');
-    const [showStats, setShowStats] = useState(false);
 
     // Get all unique tags from entries
     const allTags = useMemo(() => {
@@ -144,16 +145,6 @@ export default function JournalView({
             <div className="section-header">
                 <h2>Your Journal</h2>
                 <div className="header-controls">
-                    <button
-                        type="button"
-                        className={`stats-toggle ${showStats ? 'active' : ''}`}
-                        onClick={() => setShowStats(!showStats)}
-                        aria-label={showStats ? 'Hide statistics' : 'Show statistics'}
-                        aria-expanded={showStats}
-                    >
-                        <span className="stats-toggle-icon">📊</span>
-                        <span className="stats-toggle-text">{showStats ? 'Hide Stats' : 'Show Stats'}</span>
-                    </button>
                     <div className="view-toggle" role="tablist">
                     <button 
                         className={viewMode === 'grid' ? 'active' : ''}

@@ -43,6 +43,7 @@ function App() {
     const isInitialLoad = useRef(true);
     const syncDebounceTimer = useRef(null);
     const isSyncingFromSheets = useRef(false);
+    const [showStats, setShowStats] = useState(false);
 
     // Initialize Google Sign-In and Sheets API, and migrate entries
     useEffect(() => {
@@ -930,7 +931,7 @@ function App() {
                         >
                             <img src={user.picture} alt={user.name} className="user-avatar" />
                             <span className="user-name">{user.name}</span>
-                            <span className="menu-arrow">{showUserMenu ? '▲' : '▼'}</span>
+                            <span className="menu-icon">⚙️</span>
                         </button>
                         
                         {showUserMenu && (
@@ -995,6 +996,17 @@ function App() {
                                         </button>
                                     )}
                                     <button 
+                                        className={`btn btn-secondary ${showStats ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setShowStats(!showStats);
+                                            setShowUserMenu(false);
+                                        }}
+                                        aria-label={showStats ? 'Hide statistics' : 'Show statistics'}
+                                        aria-expanded={showStats}
+                                    >
+                                        📊 {showStats ? 'Hide Stats' : 'Show Stats'}
+                                    </button>
+                                    <button 
                                         className="btn-logout" 
                                         onClick={() => {
                                             handleLogout();
@@ -1047,6 +1059,8 @@ function App() {
                     setViewMode={setViewMode}
                     onEntryClick={openModal}
                     onEditEntry={handleEditEntry}
+                    showStats={showStats}
+                    setShowStats={setShowStats}
                 />
             )}
 
