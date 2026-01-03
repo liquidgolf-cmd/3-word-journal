@@ -52,12 +52,17 @@ export default function InputView({
     // Pre-fill form when editing
     useEffect(() => {
         if (editingEntry) {
+            const entryExperienceText = editingEntry.experienceSummary || '';
             setWord1(editingEntry.words[0] || '');
             setWord2(editingEntry.words[1] || '');
             setWord3(editingEntry.words[2] || '');
             setTags(editingEntry.tags || []);
             setFullStory(editingEntry.fullStory || '');
-            setExperienceText(editingEntry.experienceSummary || '');
+            setExperienceText(entryExperienceText);
+            // Also update external experienceText so generateThreeWords works
+            if (setExternalExperienceText) {
+                setExternalExperienceText(entryExperienceText);
+            }
             setExperienceDate(editingEntry.experienceDate ? editingEntry.experienceDate.split('T')[0] : '');
             setInputMode('manual');
         } else {
@@ -68,10 +73,14 @@ export default function InputView({
             setTags([]);
             setFullStory('');
             setExperienceText('');
+            // Also clear external experienceText
+            if (setExternalExperienceText) {
+                setExternalExperienceText('');
+            }
             setExperienceDate('');
             setInputMode('manual');
         }
-    }, [editingEntry]);
+    }, [editingEntry, setExternalExperienceText]);
     
     // Generate title when experienceText changes (for new entries)
     useEffect(() => {
