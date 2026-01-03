@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function EntryForm({
     inputMode,
@@ -18,6 +18,59 @@ export default function EntryForm({
     generateThreeWords,
     handleSubmit
 }) {
+    const [draggedWord, setDraggedWord] = useState(null);
+    const [dragOverInput, setDragOverInput] = useState(null);
+
+    const handleDragStart = (e, word) => {
+        setDraggedWord(word);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', word);
+        // Add visual feedback
+        e.currentTarget.style.opacity = '0.5';
+    };
+
+    const handleDragEnd = (e) => {
+        e.currentTarget.style.opacity = '1';
+        setDraggedWord(null);
+        setDragOverInput(null);
+    };
+
+    const handleDragOver = (e, inputIndex) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverInput(inputIndex);
+    };
+
+    const handleDragLeave = (e) => {
+        // Only clear if we're actually leaving the input (not just moving to a child)
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            setDragOverInput(null);
+        }
+    };
+
+    const handleDrop = (e, inputIndex, setWord) => {
+        e.preventDefault();
+        const word = e.dataTransfer.getData('text/plain') || draggedWord;
+        if (word) {
+            setWord(word);
+        }
+        setDragOverInput(null);
+        setDraggedWord(null);
+    };
+
+    const handleWordClick = (word) => {
+        // Find the first empty input or cycle through inputs
+        if (!word1) {
+            setWord1(word);
+        } else if (!word2) {
+            setWord2(word);
+        } else if (!word3) {
+            setWord3(word);
+        } else {
+            // All filled, replace word1
+            setWord1(word);
+        }
+    };
     return (
         <form onSubmit={handleSubmit}>
                 {/* 1. Describe Your Experience */}
@@ -135,13 +188,19 @@ export default function EntryForm({
                                         <div 
                                             key={i}
                                             className="suggested-word selected"
+                                            draggable="true"
+                                            onDragStart={(e) => handleDragStart(e, word)}
+                                            onDragEnd={handleDragEnd}
+                                            onClick={() => handleWordClick(word)}
+                                            style={{ cursor: 'grab' }}
+                                            title="Click to fill next empty input, or drag to specific input box"
                                         >
                                             {word}
                                         </div>
                                     ))}
                                 </div>
                                 <div className="suggestion-info">
-                                    Click "Regenerate" for different suggestions, or edit the words below
+                                    Click words to fill inputs, or drag words to specific input boxes below
                                 </div>
                             </div>
                         )}
@@ -172,24 +231,36 @@ export default function EntryForm({
                                     placeholder="Word 1"
                                     value={word1}
                                     onChange={(e) => setWord1(e.target.value)}
+                                    onDragOver={(e) => handleDragOver(e, 1)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, 1, setWord1)}
                                     maxLength="20"
-                                    aria-label="First word"
+                                    className={dragOverInput === 1 ? 'drag-over' : ''}
+                                    aria-label="First word - drag and drop suggested words here"
                                 />
                                 <input
                                     type="text"
                                     placeholder="Word 2"
                                     value={word2}
                                     onChange={(e) => setWord2(e.target.value)}
+                                    onDragOver={(e) => handleDragOver(e, 2)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, 2, setWord2)}
                                     maxLength="20"
-                                    aria-label="Second word"
+                                    className={dragOverInput === 2 ? 'drag-over' : ''}
+                                    aria-label="Second word - drag and drop suggested words here"
                                 />
                                 <input
                                     type="text"
                                     placeholder="Word 3"
                                     value={word3}
                                     onChange={(e) => setWord3(e.target.value)}
+                                    onDragOver={(e) => handleDragOver(e, 3)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, 3, setWord3)}
                                     maxLength="20"
-                                    aria-label="Third word"
+                                    className={dragOverInput === 3 ? 'drag-over' : ''}
+                                    aria-label="Third word - drag and drop suggested words here"
                                 />
                             </div>
                         </div>

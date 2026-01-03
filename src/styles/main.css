@@ -321,6 +321,15 @@ body {
     text-align: center;
     font-weight: 600;
     font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.three-words-input input.drag-over {
+    background: rgba(196, 166, 97, 0.1);
+    border-color: var(--accent-gold);
+    border-width: 3px;
+    transform: scale(1.02);
+    box-shadow: 0 0 10px rgba(196, 166, 97, 0.3);
 }
 
 .input-mode-toggle {
@@ -414,8 +423,13 @@ body {
     font-weight: 600;
     font-size: 1rem;
     color: var(--warm-brown);
-    cursor: pointer;
+    cursor: grab;
     transition: all 0.2s ease;
+    user-select: none;
+}
+
+.suggested-word:active {
+    cursor: grabbing;
 }
 
 .suggested-word:hover {
